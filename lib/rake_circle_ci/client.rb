@@ -9,10 +9,29 @@ module RakeCircleCI
       @project_slug = opts[:project_slug]
     end
 
+    def find_env_vars
+      response = assert_successful(Excon.get(env_vars_url, headers: headers))
+      body = JSON.parse(response.body)
+      env_vars = body["items"].map { |item| item["name"] }
+
+      env_vars
+    end
+
     def create_env_var(name, value)
       body = JSON.dump(name: name, value: value)
       assert_successful(
           Excon.post(env_vars_url, body: body, headers: headers))
+    end
+
+    def delete_env_var(name)
+      assert_successful(Excon.delete(env_var_url(name), headers: headers))
+    end
+
+    def delete_env_vars
+      env_vars = find_env_vars
+      env_vars.each do |env_var|
+        delete_env_var(env_var)
+      end
     end
 
     private
@@ -38,6 +57,10 @@ module RakeCircleCI
 
     def env_vars_url
       "#{@base_url}/v2/project/#{@project_slug}/envvar"
+    end
+
+    def env_var_url(name)
+      "#{@base_url}/v2/project/#{@project_slug}/envvar/#{name}"
     end
   end
 end
