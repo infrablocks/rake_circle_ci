@@ -1,5 +1,5 @@
 require_relative 'tasks/environment_variables'
-require_relative 'tasks/ssh_key'
+require_relative 'tasks/ssh_keys'
 
 module RakeCircleCI
   module Tasks

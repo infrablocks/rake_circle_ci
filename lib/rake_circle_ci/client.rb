@@ -35,6 +35,19 @@ module RakeCircleCI
       end
     end
 
+    def find_ssh_keys
+      response = assert_successful(Excon.get(settings_url, headers: headers))
+      body = JSON.parse(response.body)
+      ssh_keys = body["ssh_keys"].map do |ssh_key|
+        {
+            fingerprint: ssh_key["fingerprint"],
+            hostname: ssh_key["hostname"]
+        }
+      end
+
+      ssh_keys
+    end
+
     def create_ssh_key(private_key, opts = {})
       body = {
           fingerprint: SSHKey.new(private_key).sha1_fingerprint,
@@ -44,6 +57,27 @@ module RakeCircleCI
       body = JSON.dump(body)
       assert_successful(
           Excon.post(ssh_keys_url, body: body, headers: headers))
+    end
+
+    def delete_ssh_key(fingerprint, opts = {})
+      body = {
+          fingerprint: fingerprint
+      }
+      body = body.merge(hostname: opts[:hostname]) if opts[:hostname]
+      body = JSON.dump(body)
+      assert_successful(
+          Excon.delete(ssh_keys_url, body: body, headers: headers))
+    end
+
+    def delete_ssh_keys
+      ssh_keys = find_ssh_keys
+      ssh_keys.each do |ssh_key|
+        fingerprint = ssh_key[:fingerprint]
+        hostname = ssh_key[:hostname]
+        options = hostname && {hostname: hostname}
+        args = [fingerprint, options].compact
+        delete_ssh_key(*args)
+      end
     end
 
     private
@@ -73,6 +107,11 @@ module RakeCircleCI
 
     def env_var_url(name)
       "#{@base_url}/v2/project/#{@project_slug}/envvar/#{name}"
+    end
+
+    def settings_url
+      "#{@base_url}/v1.1/project/#{@project_slug}/settings?" +
+          "circle-token=#{@api_token}"
     end
 
     def ssh_keys_url
