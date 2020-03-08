@@ -22,7 +22,7 @@ module RakeCircleCI
               api_token: t.api_token,
               project_slug: t.project_slug)
 
-          print "Destroying all SSH keys to the '#{t.project_slug}' " +
+          print "Destroying all SSH keys in the '#{t.project_slug}' " +
               "project... "
           client.delete_ssh_keys
           puts "Done."
