@@ -7,4 +7,8 @@ module RakeCircleCI
   def self.define_environment_variables_tasks(opts = {}, &block)
     RakeCircleCI::TaskSets::EnvironmentVariables.define(opts, &block)
   end
+
+  def self.define_ssh_keys_tasks(opts = {}, &block)
+    RakeCircleCI::TaskSets::SSHKeys.define(opts, &block)
+  end
 end
