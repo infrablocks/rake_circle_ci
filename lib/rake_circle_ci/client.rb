@@ -1,5 +1,6 @@
 require 'json'
 require 'excon'
+require 'sshkey'
 
 module RakeCircleCI
   class Client
@@ -34,6 +35,17 @@ module RakeCircleCI
       end
     end
 
+    def create_ssh_key(private_key, opts = {})
+      body = {
+          fingerprint: SSHKey.new(private_key).sha1_fingerprint,
+          private_key: private_key,
+      }
+      body = body.merge(hostname: opts[:hostname]) if opts[:hostname]
+      body = JSON.dump(body)
+      assert_successful(
+          Excon.post(ssh_keys_url, body: body, headers: headers))
+    end
+
     private
 
     def headers
@@ -61,6 +73,11 @@ module RakeCircleCI
 
     def env_var_url(name)
       "#{@base_url}/v2/project/#{@project_slug}/envvar/#{name}"
+    end
+
+    def ssh_keys_url
+      "#{@base_url}/v1.1/project/#{@project_slug}/ssh-key?" +
+          "circle-token=#{@api_token}"
     end
   end
 end
