@@ -844,4 +844,78 @@ describe RakeCircleCI::Client do
           "Unsuccessful request: #{ssh_keys_url} 400 Bad Request"))
     end
   end
+
+  context '#follow_project' do
+    it 'deletes each ssh key on the project' do
+      project_slug = 'github/org/repo'
+      api_token = 'some-token'
+      base_url = 'https://circleci.com/api'
+
+      follow_url =
+          "#{base_url}/v1.1/project/#{project_slug}/follow?" +
+              "circle-token=#{api_token}"
+
+      client = RakeCircleCI::Client.new(
+          project_slug: project_slug,
+          api_token: api_token,
+          base_url: base_url)
+
+      expected_headers = {
+          'Circle-Token': api_token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+      }
+
+      expect(Excon)
+          .to(receive(:post)
+              .with(follow_url,
+                  headers: expected_headers)
+              .and_return(double('follow project response',
+                  status: 200,
+                  body: JSON.dump({
+                      followed: true
+                  }))))
+
+      client.follow_project
+    end
+
+    it 'raises an exception on failure' do
+      project_slug = 'github/org/repo'
+      api_token = 'some-token'
+      host = 'https://circleci.com'
+      follow_path = '/api/v1.1/project/github/org/repo/follow?' +
+          "circle-token=#{api_token}"
+      base_url = "#{host}/api"
+
+      follow_url = "#{host}#{follow_path}"
+
+      client = RakeCircleCI::Client.new(
+          project_slug: project_slug,
+          api_token: api_token,
+          base_url: base_url)
+
+      expected_headers = {
+          'Circle-Token': api_token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+      }
+
+      expect(Excon)
+          .to(receive(:post)
+              .with(follow_url,
+                  headers: expected_headers)
+              .and_return(double('follow project response',
+                  status: 400,
+                  data: {
+                      host: host,
+                      path: follow_path,
+                      reason_phrase: 'Bad Request'
+                  })))
+
+      expect {
+        client.follow_project
+      }.to(raise_error(RuntimeError,
+          "Unsuccessful request: #{follow_url} 400 Bad Request"))
+    end
+  end
 end

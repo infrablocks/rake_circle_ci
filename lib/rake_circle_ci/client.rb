@@ -10,6 +10,10 @@ module RakeCircleCI
       @project_slug = opts[:project_slug]
     end
 
+    def follow_project
+      assert_successful(Excon.post(follow_url, headers: headers))
+    end
+
     def find_env_vars
       response = assert_successful(Excon.get(env_vars_url, headers: headers))
       body = JSON.parse(response.body)
@@ -99,6 +103,11 @@ module RakeCircleCI
         raise "Unsuccessful request: #{host}#{path} #{status} #{reason}"
       end
       response
+    end
+
+    def follow_url
+      "#{@base_url}/v1.1/project/#{@project_slug}/follow?" +
+          "circle-token=#{@api_token}"
     end
 
     def env_vars_url
