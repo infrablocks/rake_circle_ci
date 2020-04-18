@@ -14,6 +14,8 @@ describe RakeCircleCI::TaskSets::Project do
   it 'adds all tasks in the provided namespace when supplied' do
     define_tasks(namespace: :circle_ci)
 
+    expect(Rake::Task.task_defined?('circle_ci:project:follow'))
+        .to(be(true))
     expect(Rake::Task.task_defined?('circle_ci:env_vars:provision'))
         .to(be(true))
     expect(Rake::Task.task_defined?('circle_ci:env_vars:destroy'))
@@ -31,6 +33,8 @@ describe RakeCircleCI::TaskSets::Project do
   it 'adds all tasks in the root namespace when none supplied' do
     define_tasks
 
+    expect(Rake::Task.task_defined?('project:follow'))
+        .to(be(true))
     expect(Rake::Task.task_defined?('env_vars:provision'))
         .to(be(true))
     expect(Rake::Task.task_defined?('env_vars:destroy'))
@@ -43,6 +47,76 @@ describe RakeCircleCI::TaskSets::Project do
         .to(be(true))
     expect(Rake::Task.task_defined?('ssh_keys:ensure'))
         .to(be(true))
+  end
+
+  context 'project' do
+    it 'adds all project tasks in the provided namespace ' +
+        'when supplied' do
+      define_tasks(project_namespace: :main_project)
+
+      expect(Rake::Task.task_defined?(
+          'main_project:follow'))
+          .to(be(true))
+    end
+
+    it 'adds all environment variable tasks in the project namespace ' +
+        'when none supplied' do
+      define_tasks
+
+      expect(Rake::Task.task_defined?(
+          'project:follow'))
+          .to(be(true))
+    end
+
+    context 'follow task' do
+      it 'configures with the provided project slug and api token' do
+        project_slug = 'gitlab/my-org/my-repo'
+        api_token = 'some-api-token'
+
+        define_tasks(
+            project_slug: project_slug,
+            api_token: api_token)
+
+        rake_task = Rake::Task["project:follow"]
+
+        expect(rake_task.creator.project_slug).to(eq(project_slug))
+        expect(rake_task.creator.api_token).to(eq(api_token))
+      end
+
+      it 'uses a base url of https://circleci.com/api by default' do
+        define_tasks
+
+        rake_task = Rake::Task["project:follow"]
+
+        expect(rake_task.creator.base_url)
+            .to(eq('https://circleci.com/api'))
+      end
+
+      it 'uses the specified base url when provided' do
+        base_url = 'https://private.circleci.net/api'
+
+        define_tasks(
+            base_url: base_url)
+
+        rake_task = Rake::Task["project:follow"]
+
+        expect(rake_task.creator.base_url).to(eq(base_url))
+      end
+
+      it 'uses a name of follow by default' do
+        define_tasks
+
+        expect(Rake::Task.task_defined?("project:follow"))
+            .to(be(true))
+      end
+
+      it 'uses the provided name when supplied' do
+        define_tasks(project_follow_task_name: :enable)
+
+        expect(Rake::Task.task_defined?("project:enable"))
+            .to(be(true))
+      end
+    end
   end
 
   context 'environment_variables' do

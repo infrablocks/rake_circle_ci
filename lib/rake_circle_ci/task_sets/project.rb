@@ -23,6 +23,9 @@ module RakeCircleCI
       parameter :ssh_keys_provision_task_name, default: :provision
       parameter :ssh_keys_ensure_task_name, default: :ensure
 
+      parameter :project_namespace, default: :project
+      parameter :project_follow_task_name, default: :follow
+
       task Tasks::EnvironmentVariables::Provision,
           name: RakeFactory::DynamicValue.new { |ts|
             ts.env_vars_provision_task_name
@@ -59,6 +62,10 @@ module RakeCircleCI
           provision_task_name: RakeFactory::DynamicValue.new { |ts|
             ts.ssh_keys_provision_task_name
           }
+      task Tasks::Projects::Follow,
+          name: RakeFactory::DynamicValue.new { |ts|
+            ts.project_follow_task_name
+          }
 
       def define_on(application)
         around_define(application) do
@@ -69,7 +76,7 @@ module RakeCircleCI
             when /SSHKeys/
               ssh_keys_namespace
             else
-              nil
+              project_namespace
             end
 
             application.in_namespace(ns) do
