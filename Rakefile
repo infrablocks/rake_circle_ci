@@ -33,7 +33,7 @@ namespace :keys do
         name_prefix: 'gpg',
         owner_name: 'InfraBlocks Maintainers',
         owner_email: 'maintainers@infrablocks.io',
-        owner_comment: 'confidante CI Key')
+        owner_comment: 'rake_circle_ci CI Key')
   end
 end
 
