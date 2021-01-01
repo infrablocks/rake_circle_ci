@@ -41,13 +41,8 @@ module RakeCircleCI
 
     def find_ssh_keys
       response = assert_successful(Excon.get(settings_url, headers: headers))
-      body = JSON.parse(response.body)
-      ssh_keys = body["ssh_keys"].map do |ssh_key|
-        {
-            fingerprint: ssh_key["fingerprint"],
-            hostname: ssh_key["hostname"]
-        }
-      end
+      body = JSON.parse(response.body, symbolize_names: true)
+      ssh_keys = body[:ssh_keys]
 
       ssh_keys
     end
@@ -81,6 +76,26 @@ module RakeCircleCI
         options = hostname && {hostname: hostname}
         args = [fingerprint, options].compact
         delete_ssh_key(*args)
+      end
+    end
+
+    def find_checkout_keys
+      response = assert_successful(
+          Excon.get(checkout_keys_url, headers: headers))
+      checkout_keys = JSON.parse(response.body, symbolize_names: true)
+
+      checkout_keys
+    end
+
+    def delete_checkout_key(fingerprint)
+      assert_successful(
+          Excon.delete(checkout_key_url(fingerprint), headers: headers))
+    end
+
+    def delete_checkout_keys
+      checkout_keys = find_checkout_keys
+      checkout_keys.each do |checkout_key|
+        delete_checkout_key(checkout_key[:fingerprint])
       end
     end
 
@@ -126,6 +141,14 @@ module RakeCircleCI
     def ssh_keys_url
       "#{@base_url}/v1.1/project/#{@project_slug}/ssh-key?" +
           "circle-token=#{@api_token}"
+    end
+
+    def checkout_keys_url
+      "#{@base_url}/v1.1/project/#{@project_slug}/checkout-key"
+    end
+
+    def checkout_key_url(fingerprint)
+      "#{@base_url}/v1.1/project/#{@project_slug}/checkout-key/#{fingerprint}"
     end
   end
 end
