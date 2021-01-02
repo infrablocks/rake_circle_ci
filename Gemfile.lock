@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rake_circle_ci (0.8.0.pre.3)
+    rake_circle_ci (0.8.0.pre.4)
       colored2 (~> 3.1)
       excon (~> 0.72)
       rake_factory (~> 0.23)
