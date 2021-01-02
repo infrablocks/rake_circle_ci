@@ -87,6 +87,16 @@ module RakeCircleCI
       checkout_keys
     end
 
+    def create_checkout_key(type)
+      type_strings = {
+          deploy_key: 'deploy-key',
+          github_user_key: 'github-user-key'
+      }
+      body = JSON.dump(type: type_strings[type.to_sym] || type.to_s)
+      assert_successful(
+          Excon.post(checkout_keys_url, body: body, headers: headers))
+    end
+
     def delete_checkout_key(fingerprint)
       assert_successful(
           Excon.delete(checkout_key_url(fingerprint), headers: headers))

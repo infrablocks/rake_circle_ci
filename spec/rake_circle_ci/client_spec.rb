@@ -342,6 +342,104 @@ describe RakeCircleCI::Client do
     end
   end
 
+  context '#create_checkout_key' do
+    it 'creates a checkout key on the project' do
+      project_slug = 'github/org/repo'
+      api_token = 'some-token'
+      base_url = 'https://circleci.com/api'
+      checkout_keys_url =
+          'https://circleci.com/api/v1.1/project/github/org/repo/checkout-key'
+
+      client = RakeCircleCI::Client.new(
+          project_slug: project_slug,
+          api_token: api_token,
+          base_url: base_url)
+
+      expected_body = JSON.dump(type: 'deploy-key')
+      expected_headers = {
+          'Circle-Token': api_token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+      }
+
+      public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQClOS845nhgELaCpJ6b" +
+          "/MEefnIVb49+vbL2hEQAufmqlibpm8cfBFqcQZdG3BEbVKofpRBGVzuma3XiR8+nc" +
+          "YAlPPKdrFU/petXzJlEwm3TjcwpkvIydDH1gBW7uf/IaRvnmHrAQ3916gGY36ebVo" +
+          "48ZPjSBdBos9VaG7EU9KJXKJlar3u/3rDE9JHly+wM8mdT+ZLLHyk4+9UqA96fvmd" +
+          "Fo8sTgVKD1Bh22VzgxiCRRYc7cRNF+e/wLrKJpjzxf7XXR5tYCElBXa4Ru+a5E4jU" +
+          "IX5ro6WCg7rGDUbVHGITjn89OSLRmkNYUm+HpxA05NE+C5THeSYs+HvSYY/COqUj+" +
+          "nbj4+FPU5L81BXx+QVI1XUUFd5itOpoZOMsKC6aEw6IrMYRRrygu9NZaxgtdE1V4D" +
+          "oWgxr9OdON6HseJQG2FwyHTQntdtJzUhBhuyrBc0FQV+5mKrCIC5qmQL4l01rPir2" +
+          "a1WhyRcDx2I75PRYDyzFUElaXFEqqFr39kLQjFcQSXcTLEZsotvc+qHfBh4BvaW61" +
+          "R8GPylijzXpcS+7ezcK9fGmtmgyiuTqre7MLSjEARvzO85k28+J35OHECoQxyBWnK" +
+          "9ePAYQYBpbU7mj6GojCiv+8rpw3hX+A5sqLEgwwFGEWJLyZaNKNifjQWjeRxD/jeg" +
+          "s8dOSwQIoFB6v7FQ=="
+
+      response = double('create checkout key response',
+          status: 201,
+          body: JSON.dump(
+              public_key: public_key,
+              type: "deploy-key",
+              fingerprint: "d6:1b:2e:59:ca:11:a1:b0:23:83:93:ef:93:d8:a4:50",
+              login: nil,
+              preferred: true,
+              time: "2021-01-01T23:29:01.432Z"
+          ))
+      expect(Excon)
+          .to(receive(:post)
+              .with(checkout_keys_url,
+                  body: expected_body,
+                  headers: expected_headers)
+              .and_return(response))
+
+      client.create_checkout_key(:deploy_key)
+    end
+
+    it 'raises an exception on failure' do
+      project_slug = 'github/org/repo'
+      api_token = 'some-token'
+      host = "https://circleci.com"
+      base_path = "/api"
+      base_url = "#{host}#{base_path}"
+
+      checkout_keys_path =
+          "#{base_path}/v1.1/project/github/org/repo/checkout-key"
+      checkout_keys_url = "#{host}#{checkout_keys_path}"
+
+      client = RakeCircleCI::Client.new(
+          project_slug: project_slug,
+          api_token: api_token,
+          base_url: base_url)
+
+      expected_body = JSON.dump(
+          type: 'deploy-key')
+      expected_headers = {
+          'Circle-Token': api_token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+      }
+
+      response = double('create checkout key response',
+          status: 400,
+          data: {
+              host: host,
+              path: checkout_keys_path,
+              reason_phrase: 'Bad Request'
+          })
+      allow(Excon)
+          .to(receive(:post)
+              .with(checkout_keys_url,
+                  body: expected_body,
+                  headers: expected_headers)
+              .and_return(response))
+
+      expect {
+        client.create_checkout_key(:deploy_key)
+      }.to(raise_error(RuntimeError,
+          "Unsuccessful request: #{checkout_keys_url} 400 Bad Request"))
+    end
+  end
+
   context '#delete_checkout_key' do
     it 'deletes an checkout key from the project' do
       project_slug = 'github/org/repo'
