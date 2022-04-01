@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'tasks/projects'
 require_relative 'tasks/environment_variables'
 require_relative 'tasks/ssh_keys'

@@ -1,284 +1,204 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 require 'sshkey'
 
 describe RakeCircleCI::Client do
-  context '#create_env_var' do
+  describe '#create_env_var' do
     it 'creates an environment variable on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
-      env_vars_url =
-          'https://circleci.com/api/v2/project/github/org/repo/envvar'
-
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
       env_var_name = 'THING_ONE'
       env_var_value = 'value-one'
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_body = JSON.dump(
-          name: env_var_name,
-          value: env_var_value)
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
-
-      response = double('create env var response', status: 201)
-      expect(Excon)
-          .to(receive(:post)
-              .with(env_vars_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
+      expected_body = create_env_var_request_body(
+        env_var_name, env_var_value
+      )
+      stub_successful_create_env_var_request(
+        host, env_vars_path(project_slug), api_token, expected_body
+      )
 
       client.create_env_var(env_var_name, env_var_value)
+
+      expect(Excon)
+        .to(have_received(:post)
+              .with(env_vars_url(host, project_slug),
+                    body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      path = '/api/v2/project/github/org/repo/envvar'
       base_url = "#{host}/api"
-      env_vars_url = "#{host}#{path}"
 
       env_var_name = 'THING_ONE'
       env_var_value = 'value-one'
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_body = JSON.dump(
-          name: env_var_name,
-          value: env_var_value)
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      expected_body = create_env_var_request_body(env_var_name, env_var_value)
+      stub_failed_create_env_var_request(
+        host, env_vars_path(project_slug), api_token, expected_body
+      )
 
-      response = double('create env var response',
-          status: 400,
-          data: {
-              host: host,
-              path: path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:post)
-              .with(env_vars_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
-
-      expect {
+      expect do
         client.create_env_var(env_var_name, env_var_value)
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{host}#{path} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{env_vars_url(host, project_slug)} "\
+               '400 Bad Request'
+             ))
     end
   end
 
-  context '#delete_env_var' do
+  describe '#delete_env_var' do
     it 'deletes an environment variable from the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
       env_var_name = 'THING_ONE'
-      env_var_url =
-          "#{base_url}/v2/project/#{project_slug}/envvar/#{env_var_name}"
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
-
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
-
-      response = double('delete env var response', status: 201)
-      expect(Excon)
-          .to(receive(:delete)
-              .with(env_var_url,
-                  headers: expected_headers)
-              .and_return(response))
+      stub_successful_delete_env_var_request(
+        host, env_var_path(project_slug, env_var_name), api_token
+      )
 
       client.delete_env_var(env_var_name)
+
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(env_var_url(host, project_slug, env_var_name),
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      path = '/api/v2/project/github/org/repo/envvar/THING_ONE'
       base_url = "#{host}/api"
 
       env_var_name = 'THING_ONE'
-      env_var_url = "#{host}#{path}"
+      env_var_path = env_var_path(project_slug, env_var_name)
+      env_var_url = env_var_url(host, project_slug, env_var_name)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      stub_failed_delete_env_var_request(host, env_var_path, api_token)
 
-      response = double('delete env var response',
-          status: 400,
-          data: {
-              host: host,
-              path: path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:delete)
-              .with(env_var_url,
-                  headers: expected_headers)
-              .and_return(response))
-
-      expect {
+      expect do
         client.delete_env_var(env_var_name)
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{host}#{path} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{env_var_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#find_env_vars' do
+  describe '#find_env_vars' do
     it 'finds all environment variables on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
+      env_var_1_name = 'THING_ONE'
+      env_var_2_name = 'THING_TWO'
 
-      env_vars_url =
-          'https://circleci.com/api/v2/project/github/org/repo/envvar'
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
-
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
-
-      response = double('list env vars response',
-          status: 201,
-          body: JSON.dump({
-              items: [
-                  {name: "THING_ONE"},
-                  {name: "THING_TWO"},
-              ]
-          }))
-      expect(Excon)
-          .to(receive(:get)
-              .with(env_vars_url,
-                  headers: expected_headers)
-              .and_return(response))
+      stub_successful_list_env_vars_request(
+        host, env_vars_path(project_slug), api_token,
+        [env_var_1_name, env_var_2_name]
+      )
 
       env_vars = client.find_env_vars
 
-      expect(env_vars).to(eq(["THING_ONE", "THING_TWO"]))
+      expect(env_vars).to(eq(%w[THING_ONE THING_TWO]))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      path = '/api/v2/project/github/org/repo/envvar'
       base_url = "#{host}/api"
 
-      env_vars_url = "#{host}#{path}"
+      env_vars_path = env_vars_path(project_slug)
+      env_vars_url = env_vars_url(host, project_slug)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      stub_failed_list_env_vars_request(host, env_vars_path, api_token)
 
-      response = double('delete env var response',
-          status: 400,
-          data: {
-              host: host,
-              path: path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:get)
-              .with(env_vars_url,
-                  headers: expected_headers)
-              .and_return(response))
-
-      expect {
+      expect do
         client.find_env_vars
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{host}#{path} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{env_vars_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#delete_env_vars' do
+  describe '#delete_env_vars' do
     it 'deletes each environment variables on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      env_vars_url = "#{base_url}/v2/project/github/org/repo/envvar"
-      env_var_1_url = "#{env_vars_url}/THING_ONE"
-      env_var_2_url = "#{env_vars_url}/THING_TWO"
+      env_vars_path = env_vars_path(project_slug)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      env_var_1_name = 'THING_ONE'
+      env_var_2_name = 'THING_TWO'
+      env_var_1_path = env_var_path(project_slug, env_var_1_name)
+      env_var_2_path = env_var_path(project_slug, env_var_2_name)
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expect(Excon)
-          .to(receive(:get)
-              .with(env_vars_url,
-                  headers: expected_headers)
-              .and_return(
-                  double('list env vars response',
-                      status: 201,
-                      body: JSON.dump({
-                          items: [
-                              {name: "THING_ONE"},
-                              {name: "THING_TWO"},
-                          ]
-                      }))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(env_var_1_url,
-                  headers: expected_headers)
-              .and_return(double('delete env var 1 response', status: 201)))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(env_var_2_url,
-                  headers: expected_headers)
-              .and_return(double('delete env var 1 response', status: 201)))
+      stub_successful_list_env_vars_request(
+        host, env_vars_path, api_token,
+        [env_var_1_name, env_var_2_name]
+      )
+      stub_successful_delete_env_var_request(
+        host, env_var_1_path, api_token, '1'
+      )
+      stub_successful_delete_env_var_request(
+        host, env_var_2_path, api_token, '2'
+      )
 
       client.delete_env_vars
     end
@@ -287,1194 +207,1256 @@ describe RakeCircleCI::Client do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      base_path = '/api/v2/project/github/org/repo/envvar'
       base_url = "#{host}/api"
 
-      env_vars_url = "#{host}#{base_path}"
-      env_var_1_url = "#{env_vars_url}/THING_ONE"
-      env_var_2_url = "#{env_vars_url}/THING_TWO"
+      env_vars_path = env_vars_path(project_slug)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      env_var_1_name = 'THING_ONE'
+      env_var_2_name = 'THING_TWO'
+      env_var_1_path = env_var_path(project_slug, env_var_1_name)
+      env_var_2_path = env_var_path(project_slug, env_var_2_name)
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expect(Excon)
-          .to(receive(:get)
-              .with(env_vars_url,
-                  headers: expected_headers)
-              .and_return(
-                  double('list env vars response',
-                      status: 201,
-                      body: JSON.dump({
-                          items: [
-                              {name: "THING_ONE"},
-                              {name: "THING_TWO"},
-                          ]
-                      }))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(env_var_1_url,
-                  headers: expected_headers)
-              .and_return(double('delete env var 1 response', status: 201)))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(env_var_2_url,
-                  headers: expected_headers)
-              .and_return(double('delete env var 1 response',
-                  status: 400,
-                  data: {
-                      host: host,
-                      path: "#{base_path}/THING_TWO",
-                      reason_phrase: 'Bad Request'
-                  })))
+      stub_successful_list_env_vars_request(
+        host, env_vars_path, api_token,
+        [env_var_1_name, env_var_2_name]
+      )
+      stub_successful_delete_env_var_request(
+        host, env_var_1_path, api_token, '1'
+      )
+      stub_failed_delete_env_var_request(
+        host, env_var_2_path, api_token, '2'
+      )
 
-      expect {
+      expect do
         client.delete_env_vars
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{env_var_2_url} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{host}#{env_var_2_path} 400 Bad Request"
+             ))
     end
   end
 
-  context '#create_checkout_key' do
+  describe '#create_checkout_key' do
     it 'creates a checkout key on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
-      checkout_keys_url =
-          'https://circleci.com/api/v1.1/project/github/org/repo/checkout-key'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      checkout_keys_path = checkout_keys_path(project_slug)
 
-      expected_body = JSON.dump(type: 'deploy-key')
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQClOS845nhgELaCpJ6b" +
-          "/MEefnIVb49+vbL2hEQAufmqlibpm8cfBFqcQZdG3BEbVKofpRBGVzuma3XiR8+nc" +
-          "YAlPPKdrFU/petXzJlEwm3TjcwpkvIydDH1gBW7uf/IaRvnmHrAQ3916gGY36ebVo" +
-          "48ZPjSBdBos9VaG7EU9KJXKJlar3u/3rDE9JHly+wM8mdT+ZLLHyk4+9UqA96fvmd" +
-          "Fo8sTgVKD1Bh22VzgxiCRRYc7cRNF+e/wLrKJpjzxf7XXR5tYCElBXa4Ru+a5E4jU" +
-          "IX5ro6WCg7rGDUbVHGITjn89OSLRmkNYUm+HpxA05NE+C5THeSYs+HvSYY/COqUj+" +
-          "nbj4+FPU5L81BXx+QVI1XUUFd5itOpoZOMsKC6aEw6IrMYRRrygu9NZaxgtdE1V4D" +
-          "oWgxr9OdON6HseJQG2FwyHTQntdtJzUhBhuyrBc0FQV+5mKrCIC5qmQL4l01rPir2" +
-          "a1WhyRcDx2I75PRYDyzFUElaXFEqqFr39kLQjFcQSXcTLEZsotvc+qHfBh4BvaW61" +
-          "R8GPylijzXpcS+7ezcK9fGmtmgyiuTqre7MLSjEARvzO85k28+J35OHECoQxyBWnK" +
-          "9ePAYQYBpbU7mj6GojCiv+8rpw3hX+A5sqLEgwwFGEWJLyZaNKNifjQWjeRxD/jeg" +
-          "s8dOSwQIoFB6v7FQ=="
-
-      response = double('create checkout key response',
-          status: 201,
-          body: JSON.dump(
-              public_key: public_key,
-              type: "deploy-key",
-              fingerprint: "d6:1b:2e:59:ca:11:a1:b0:23:83:93:ef:93:d8:a4:50",
-              login: nil,
-              preferred: true,
-              time: "2021-01-01T23:29:01.432Z"
-          ))
-      expect(Excon)
-          .to(receive(:post)
-              .with(checkout_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
+      expected_body = create_checkout_key_request_body
+      stub_successful_create_checkout_key_request(
+        host, checkout_keys_path, api_token, expected_body
+      )
 
       client.create_checkout_key(:deploy_key)
+
+      expect(Excon)
+        .to(have_received(:post)
+              .with(checkout_keys_url(host, project_slug),
+                    body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      host = "https://circleci.com"
-      base_path = "/api"
-      base_url = "#{host}#{base_path}"
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      checkout_keys_path =
-          "#{base_path}/v1.1/project/github/org/repo/checkout-key"
-      checkout_keys_url = "#{host}#{checkout_keys_path}"
+      checkout_keys_url = checkout_keys_url(host, project_slug)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_body = JSON.dump(
-          type: 'deploy-key')
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      expected_body = create_checkout_key_request_body
+      stub_failed_create_checkout_key_request(
+        host, checkout_keys_path(project_slug), api_token, expected_body
+      )
 
-      response = double('create checkout key response',
-          status: 400,
-          data: {
-              host: host,
-              path: checkout_keys_path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:post)
-              .with(checkout_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
-
-      expect {
+      expect do
         client.create_checkout_key(:deploy_key)
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{checkout_keys_url} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{checkout_keys_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#delete_checkout_key' do
+  describe '#delete_checkout_key' do
     it 'deletes an checkout key from the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      fingerprint = "ed:2d:db:67:27:f2:22:51:33:ac:6f:70:35:0a:e7:37"
+      checkout_key = ssh_key
+      fingerprint = checkout_key.fingerprint
 
-      checkout_key_url =
-          "#{base_url}/v1.1/project/github/org/repo/checkout-key/#{fingerprint}"
+      checkout_key_path = checkout_key_path(project_slug, fingerprint)
+      checkout_key_url = checkout_key_url(host, project_slug, fingerprint)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
-
-      response = double('delete checkout key response',
-          status: 200,
-          body: JSON.dump({
-              message: "ok"
-          }))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(checkout_key_url,
-                  headers: expected_headers)
-              .and_return(response))
+      stub_successful_delete_checkout_key_request(
+        host, checkout_key_path, api_token
+      )
 
       client.delete_checkout_key(fingerprint)
+
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(checkout_key_url,
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      host = "https://circleci.com"
-      base_path = "/api"
-      base_url = "#{host}#{base_path}"
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      fingerprint = "ed:2d:db:67:27:f2:22:51:33:ac:6f:70:35:0a:e7:37"
+      fingerprint = ssh_key.fingerprint
 
-      checkout_key_path =
-          "#{base_path}/v1.1/project/github/org/repo/checkout-key/" +
-              "#{fingerprint}"
-      checkout_key_url = "#{host}#{checkout_key_path}"
+      checkout_key_path = checkout_key_path(project_slug, fingerprint)
+      checkout_key_url = checkout_key_url(host, project_slug, fingerprint)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      stub_failed_delete_checkout_key_request(
+        host, checkout_key_path, api_token
+      )
 
-      response = double('delete checkout key response',
-          status: 400,
-          data: {
-              host: host,
-              path: checkout_key_path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:delete)
-              .with(checkout_key_url,
-                  headers: expected_headers)
-              .and_return(response))
-
-      expect {
+      expect do
         client.delete_checkout_key(fingerprint)
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{checkout_key_url} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{checkout_key_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#find_checkout_keys' do
+  describe '#find_checkout_keys' do
     it 'finds all checkout keys on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      fingerprint_1 = "ed:2d:db:67:27:f2:22:51:33:ac:6f:70:35:0a:e7:37"
-      fingerprint_2 = "80:d9:83:0e:72:fc:a9:8a:35:78:7a:dd:4b:58:48:29"
+      checkout_keys_path = checkout_keys_path(project_slug)
 
-      checkout_keys_url =
-          "#{base_url}/v1.1/project/github/org/repo/checkout-key"
-      checkout_key_1_url = "#{checkout_keys_url}/#{fingerprint_1}"
-      checkout_key_2_url = "#{checkout_keys_url}/#{fingerprint_2}"
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
-
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+      checkout_key1 = {
+        key: ssh_key,
+        type: 'github-user-key',
+        login: 'tobyclemson',
+        time: '2020-12-31T19:52:45.088Z'
+      }
+      checkout_key2 = {
+        key: ssh_key,
+        type: 'deploy-key',
+        time: '2020-12-30T21:12:24.565Z'
       }
 
-      public_key_1 =
-          "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCqV6EPxZkI4YMj1PTAK5uA" +
-              "QJ7lfoBvaiynHUPYoJxiIGclOamg93W5j+EQUsQUQ9wjcYkJJTcf4KvksW573m1Nr" +
-              "NWPQCo7Y2/ysXoMs7y1JGXiB/AHLDX1KQ8jrRna+2w+nVLMXUXq2DqNdpKXG8jTcJ" +
-              "9gPEW1/zJ5rMt950auIcEywT0QFrl2C2EYosCcC57LLbNa6qwvVJ3f09WPbWL6dhM" +
-              "HLa7mB/ZeNv8EZnfY38dh65jnEUPLjJPRUs523JhWiLli930cdOp1xqDdP0Y/dgeN" +
-              "F7hNxjeL1EMVy5gvWsTv1Oewd4215bIh2nhnAxr57wRbOXrm+Uj/FHsQZTWUKg2z0" +
-              "uLPj7oZADb/2oTudndt2QIVjdlvHRQL4sURsTFyDMRZKXDBeiVBNJ9ybGrJgLDVw8" +
-              "OISjhTh9htty4ceKQQR1whomzu2y3IrWvPxkS5M0ZSofhNQMlEOv0eAZxwdcOYYMv" +
-              "e1kWknJksdF09WZqZSCOinL4W4N+gcw2nxEgD4aZcBwZD6/Fq/PKcXMuyZ5IMlSh8" +
-              "1OY1vXCeGb6fNLRpF6geKEXju1GF0R0bC5LMQY6yuYoQq/6kODaj7GwJUDTND638V" +
-              "4iL77Xo5ACZDhf3A4MOnpCbHdqvPQOYFx+FFUjpYBRVuPwhB1aIqEFedq8Na4VbsA" +
-              "+qInvFJZ4tcQ=="
-      public_key_2 =
-          "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDNaNp0GS0Yh9Otbt" +
-              "c5bwOp9t0eKTIYHFdSpYaPCDHe9RnclDqLpgL7mXMci2Zq/8g9NeEcEdDiGpVKOot" +
-              "ucPDMeDvRD1nTI4HWv7wiE1t+9GqReb9kvoGS3AU7AFMrTin7UwjS4IznvdYiCLSA" +
-              "Jbbbil5GZuNTeIFkF7sDIcwnnzaACD3Rfh8Jn94useo8230Zg1MK6c5k9yP24j2AL" +
-              "rIfLiDGr0zp1UhNT1Ccm6/srkuk6GMvbmkmOZavFhJttd1NkG95dDBWS/uDcy3c7/" +
-              "uWsOB2vhARt6P1ecRxq7w4Hamun+a/LLjmXh2OOkEt/Kd0ONnpMoYekHIlJr9pLtB" +
-              "33+K9zrTfXC00KgO5KbjhkjMx+Jx4kB9vDd/6Kk4xl0MVhGykhkyxkvG5ihNSA0EQ" +
-              "VBQO7m9RmIN1O8Hk3GDpCxdUD0u2/i0fJf2qhpbLd7Gl+qQqtRJSCWYXvuUb2Te/V" +
-              "oS9ytfURYpYw+iwVEOYqqSjjzawj4E8/3KGW/N30Geev5gq1fYoZcIzW7jRdDFgE9" +
-              "sK0ijjU8GS5JoZb/95fzQUXRnjRrDo4x8U9XIJbmnbArtvJv45fUXlppV1jicMpQp" +
-              "XxPkimQ1XmAEa44ATEkqaISQs4jAelJHPwyYOveSCiCXSSMIbGHCDFKX0kPexmRuH" +
-              "U6AdyxAkKoNGixYoCw=="
-
-      time_1 = "2020-12-31T19:52:45.088Z"
-      time_2 = "2020-12-30T21:12:24.565Z"
-
-      response = double('get checkout keys response',
-          status: 200,
-          body: JSON.dump([
-              {
-                  public_key: public_key_1,
-                  type: "github-user-key",
-                  fingerprint: fingerprint_1,
-                  login: "tobyclemson",
-                  preferred: true,
-                  time: time_1
-              },
-              {
-                  public_key: public_key_2,
-                  type: "deploy-key",
-                  fingerprint: fingerprint_2,
-                  login: nil,
-                  preferred: false,
-                  time: time_2
-              }
-          ]))
-      expect(Excon)
-          .to(receive(:get)
-              .with(checkout_keys_url,
-                  headers: expected_headers)
-              .and_return(response))
+      stub_successful_list_checkout_keys_request(
+        host, checkout_keys_path, api_token,
+        [checkout_key1, checkout_key2]
+      )
 
       checkout_keys = client.find_checkout_keys
 
       expect(checkout_keys)
-          .to(eq([
-              {
-                  public_key: public_key_1,
-                  type: "github-user-key",
-                  fingerprint: fingerprint_1,
-                  login: "tobyclemson",
-                  preferred: true,
-                  time: time_1
-              },
-              {
-                  public_key: public_key_2,
-                  type: "deploy-key",
-                  fingerprint: fingerprint_2,
-                  login: nil,
-                  preferred: false,
-                  time: time_2
-              }
-          ]))
+        .to(eq([checkout_key_response_body(checkout_key1),
+                checkout_key_response_body(checkout_key2)]))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      host = "https://circleci.com"
-      base_path = "/api"
-      base_url = "#{host}#{base_path}"
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      checkout_keys_path =
-          "#{base_path}/v1.1/project/github/org/repo/checkout-key"
-      checkout_keys_url =
-          "#{host}#{checkout_keys_path}"
+      checkout_keys_path = checkout_keys_path(project_slug)
+      checkout_keys_url = checkout_keys_url(host, project_slug)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      stub_failed_list_checkout_keys_request(
+        host, checkout_keys_path, api_token
+      )
 
-      response = double('get checkout keys response',
-          status: 400,
-          data: {
-              host: host,
-              path: checkout_keys_path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:get)
-              .with(checkout_keys_url,
-                  headers: expected_headers)
-              .and_return(response))
-
-      expect {
+      expect do
         client.find_checkout_keys
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{host}#{checkout_keys_path} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{checkout_keys_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#delete_checkout_keys' do
+  describe '#delete_checkout_keys' do
+    # rubocop:disable RSpec/MultipleExpectations
     it 'deletes each checkout key on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      fingerprint_1 = "ed:2d:db:67:27:f2:22:51:33:ac:6f:70:35:0a:e7:37"
-      fingerprint_2 = "80:d9:83:0e:72:fc:a9:8a:35:78:7a:dd:4b:58:48:29"
+      checkout_keys_path = checkout_keys_path(project_slug)
 
-      checkout_keys_url =
-          "#{base_url}/v1.1/project/github/org/repo/checkout-key"
-      checkout_key_1_url = "#{checkout_keys_url}/#{fingerprint_1}"
-      checkout_key_2_url = "#{checkout_keys_url}/#{fingerprint_2}"
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      checkout_key1 = ssh_key
+      checkout_key2 = ssh_key
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      fingerprint1 = checkout_key1.fingerprint
+      fingerprint2 = checkout_key2.fingerprint
 
-      expect(Excon)
-          .to(receive(:get)
-              .with(checkout_keys_url,
-                  headers: expected_headers)
-              .and_return(
-                  double('list checkout keys response',
-                      status: 200,
-                      body: JSON.dump([
-                          {
-                              public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQA" +
-                                  "BAAACAQCqV6EPxZkI4YMj1PTAK5uAQJ7lfoBvaiyn" +
-                                  "HUPYoJxiIGclOamg93W5j+EQUsQUQ9wjcYkJJTcf4" +
-                                  "KvksW573m1NrNWPQCo7Y2/ysXoMs7y1JGXiB/AHLD" +
-                                  "X1KQ8jrRna+2w+nVLMXUXq2DqNdpKXG8jTcJ9gPEW" +
-                                  "1/zJ5rMt950auIcEywT0QFrl2C2EYosCcC57LLbNa" +
-                                  "6qwvVJ3f09WPbWL6dhMHLa7mB/ZeNv8EZnfY38dh6" +
-                                  "5jnEUPLjJPRUs523JhWiLli930cdOp1xqDdP0Y/dg" +
-                                  "eNF7hNxjeL1EMVy5gvWsTv1Oewd4215bIh2nhnAxr" +
-                                  "57wRbOXrm+Uj/FHsQZTWUKg2z0uLPj7oZADb/2oTu" +
-                                  "dndt2QIVjdlvHRQL4sURsTFyDMRZKXDBeiVBNJ9yb" +
-                                  "GrJgLDVw8OISjhTh9htty4ceKQQR1whomzu2y3IrW" +
-                                  "vPxkS5M0ZSofhNQMlEOv0eAZxwdcOYYMve1kWknJk" +
-                                  "sdF09WZqZSCOinL4W4N+gcw2nxEgD4aZcBwZD6/Fq" +
-                                  "/PKcXMuyZ5IMlSh81OY1vXCeGb6fNLRpF6geKEXju" +
-                                  "1GF0R0bC5LMQY6yuYoQq/6kODaj7GwJUDTND638V4" +
-                                  "iL77Xo5ACZDhf3A4MOnpCbHdqvPQOYFx+FFUjpYBR" +
-                                  "VuPwhB1aIqEFedq8Na4VbsA+qInvFJZ4tcQ==",
-                              type: "github-user-key",
-                              fingerprint: fingerprint_1,
-                              login: "tobyclemson",
-                              preferred: true,
-                              time: "2020-12-31T19:52:45.088Z"
-                          },
-                          {
-                              public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB" +
-                                  "AAACAQDNaNp0GS0Yh9Otbtc5bwOp9t0eKTIYHFdS" +
-                                  "pYaPCDHe9RnclDqLpgL7mXMci2Zq/8g9NeEcEdDi" +
-                                  "GpVKOotucPDMeDvRD1nTI4HWv7wiE1t+9GqReb9k" +
-                                  "voGS3AU7AFMrTin7UwjS4IznvdYiCLSAJbbbil5G" +
-                                  "ZuNTeIFkF7sDIcwnnzaACD3Rfh8Jn94useo8230Z" +
-                                  "g1MK6c5k9yP24j2ALrIfLiDGr0zp1UhNT1Ccm6/s" +
-                                  "rkuk6GMvbmkmOZavFhJttd1NkG95dDBWS/uDcy3c" +
-                                  "7/uWsOB2vhARt6P1ecRxq7w4Hamun+a/LLjmXh2O" +
-                                  "OkEt/Kd0ONnpMoYekHIlJr9pLtB33+K9zrTfXC00" +
-                                  "KgO5KbjhkjMx+Jx4kB9vDd/6Kk4xl0MVhGykhkyx" +
-                                  "kvG5ihNSA0EQVBQO7m9RmIN1O8Hk3GDpCxdUD0u2" +
-                                  "/i0fJf2qhpbLd7Gl+qQqtRJSCWYXvuUb2Te/VoS9" +
-                                  "ytfURYpYw+iwVEOYqqSjjzawj4E8/3KGW/N30Gee" +
-                                  "v5gq1fYoZcIzW7jRdDFgE9sK0ijjU8GS5JoZb/95" +
-                                  "fzQUXRnjRrDo4x8U9XIJbmnbArtvJv45fUXlppV1" +
-                                  "jicMpQpXxPkimQ1XmAEa44ATEkqaISQs4jAelJHP" +
-                                  "wyYOveSCiCXSSMIbGHCDFKX0kPexmRuHU6AdyxAk" +
-                                  "KoNGixYoCw==",
-                              type: "deploy-key",
-                              fingerprint: fingerprint_2,
-                              login: nil,
-                              preferred: false,
-                              time: "2020-12-30T21:12:24.565Z"
-                          }
-                      ]))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(checkout_key_1_url,
-                  headers: expected_headers)
-              .and_return(
-                  double('delete checkout key 1 response',
-                      status: 200,
-                      body: JSON.dump({
-                          message: "ok"
-                      }))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(checkout_key_2_url,
-                  headers: expected_headers)
-              .and_return(
-                  double('delete checkout key 2 response',
-                      status: 200,
-                      body: JSON.dump({
-                          message: "ok"
-                      }))))
+      stub_successful_list_checkout_keys_request(
+        host, checkout_keys_path, api_token,
+        [{ key: checkout_key1 }, { key: checkout_key2 }]
+      )
+      stub_successful_delete_checkout_key_request(
+        host, checkout_key_path(project_slug, fingerprint1), api_token
+      )
+      stub_successful_delete_checkout_key_request(
+        host, checkout_key_path(project_slug, fingerprint2), api_token
+      )
 
       client.delete_checkout_keys
+
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(checkout_key_url(host, project_slug, fingerprint1),
+                    headers: authenticated_headers(api_token)))
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(checkout_key_url(host, project_slug, fingerprint2),
+                    headers: authenticated_headers(api_token)))
     end
+    # rubocop:enable RSpec/MultipleExpectations
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      host = "https://circleci.com"
-      base_path = "/api"
-      base_url = "#{host}#{base_path}"
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      fingerprint_1 = "ed:2d:db:67:27:f2:22:51:33:ac:6f:70:35:0a:e7:37"
-      fingerprint_2 = "80:d9:83:0e:72:fc:a9:8a:35:78:7a:dd:4b:58:48:29"
+      checkout_keys_path = checkout_keys_path(project_slug)
 
-      checkout_keys_path =
-          "#{base_path}/v1.1/project/github/org/repo/checkout-key"
-      checkout_keys_url =
-          "#{host}#{checkout_keys_path}"
-      checkout_key_1_url = "#{checkout_keys_url}/#{fingerprint_1}"
-      checkout_key_2_url = "#{checkout_keys_url}/#{fingerprint_2}"
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      checkout_key1 = ssh_key
+      checkout_key2 = ssh_key
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      fingerprint1 = checkout_key1.fingerprint
+      fingerprint2 = checkout_key2.fingerprint
 
-      expect(Excon)
-          .to(receive(:get)
-              .with(checkout_keys_url,
-                  headers: expected_headers)
-              .and_return(
-                  double('list checkout keys response',
-                      status: 200,
-                      body: JSON.dump([
-                          {
-                              public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQA" +
-                                  "BAAACAQCqV6EPxZkI4YMj1PTAK5uAQJ7lfoBvaiyn" +
-                                  "HUPYoJxiIGclOamg93W5j+EQUsQUQ9wjcYkJJTcf4" +
-                                  "KvksW573m1NrNWPQCo7Y2/ysXoMs7y1JGXiB/AHLD" +
-                                  "X1KQ8jrRna+2w+nVLMXUXq2DqNdpKXG8jTcJ9gPEW" +
-                                  "1/zJ5rMt950auIcEywT0QFrl2C2EYosCcC57LLbNa" +
-                                  "6qwvVJ3f09WPbWL6dhMHLa7mB/ZeNv8EZnfY38dh6" +
-                                  "5jnEUPLjJPRUs523JhWiLli930cdOp1xqDdP0Y/dg" +
-                                  "eNF7hNxjeL1EMVy5gvWsTv1Oewd4215bIh2nhnAxr" +
-                                  "57wRbOXrm+Uj/FHsQZTWUKg2z0uLPj7oZADb/2oTu" +
-                                  "dndt2QIVjdlvHRQL4sURsTFyDMRZKXDBeiVBNJ9yb" +
-                                  "GrJgLDVw8OISjhTh9htty4ceKQQR1whomzu2y3IrW" +
-                                  "vPxkS5M0ZSofhNQMlEOv0eAZxwdcOYYMve1kWknJk" +
-                                  "sdF09WZqZSCOinL4W4N+gcw2nxEgD4aZcBwZD6/Fq" +
-                                  "/PKcXMuyZ5IMlSh81OY1vXCeGb6fNLRpF6geKEXju" +
-                                  "1GF0R0bC5LMQY6yuYoQq/6kODaj7GwJUDTND638V4" +
-                                  "iL77Xo5ACZDhf3A4MOnpCbHdqvPQOYFx+FFUjpYBR" +
-                                  "VuPwhB1aIqEFedq8Na4VbsA+qInvFJZ4tcQ==",
-                              type: "github-user-key",
-                              fingerprint: fingerprint_1,
-                              login: "tobyclemson",
-                              preferred: true,
-                              time: "2020-12-31T19:52:45.088Z"
-                          },
-                          {
-                              public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB" +
-                                  "AAACAQDNaNp0GS0Yh9Otbtc5bwOp9t0eKTIYHFdS" +
-                                  "pYaPCDHe9RnclDqLpgL7mXMci2Zq/8g9NeEcEdDi" +
-                                  "GpVKOotucPDMeDvRD1nTI4HWv7wiE1t+9GqReb9k" +
-                                  "voGS3AU7AFMrTin7UwjS4IznvdYiCLSAJbbbil5G" +
-                                  "ZuNTeIFkF7sDIcwnnzaACD3Rfh8Jn94useo8230Z" +
-                                  "g1MK6c5k9yP24j2ALrIfLiDGr0zp1UhNT1Ccm6/s" +
-                                  "rkuk6GMvbmkmOZavFhJttd1NkG95dDBWS/uDcy3c" +
-                                  "7/uWsOB2vhARt6P1ecRxq7w4Hamun+a/LLjmXh2O" +
-                                  "OkEt/Kd0ONnpMoYekHIlJr9pLtB33+K9zrTfXC00" +
-                                  "KgO5KbjhkjMx+Jx4kB9vDd/6Kk4xl0MVhGykhkyx" +
-                                  "kvG5ihNSA0EQVBQO7m9RmIN1O8Hk3GDpCxdUD0u2" +
-                                  "/i0fJf2qhpbLd7Gl+qQqtRJSCWYXvuUb2Te/VoS9" +
-                                  "ytfURYpYw+iwVEOYqqSjjzawj4E8/3KGW/N30Gee" +
-                                  "v5gq1fYoZcIzW7jRdDFgE9sK0ijjU8GS5JoZb/95" +
-                                  "fzQUXRnjRrDo4x8U9XIJbmnbArtvJv45fUXlppV1" +
-                                  "jicMpQpXxPkimQ1XmAEa44ATEkqaISQs4jAelJHP" +
-                                  "wyYOveSCiCXSSMIbGHCDFKX0kPexmRuHU6AdyxAk" +
-                                  "KoNGixYoCw==",
-                              type: "deploy-key",
-                              fingerprint: fingerprint_2,
-                              login: nil,
-                              preferred: false,
-                              time: "2020-12-30T21:12:24.565Z"
-                          }
-                      ]))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(checkout_key_1_url,
-                  headers: expected_headers)
-              .and_return(
-                  double('delete checkout key 1 response',
-                      status: 200,
-                      body: JSON.dump({
-                          message: "ok"
-                      }))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(checkout_key_2_url,
-                  headers: expected_headers)
-              .and_return(double('delete checkout key 2 response',
-                  status: 400,
-                  data: {
-                      host: 'https://circleci.com',
-                      path: "#{checkout_keys_path}/#{fingerprint_2}",
-                      reason_phrase: 'Bad Request'
-                  })))
+      checkout_key2_url = checkout_key_url(host, project_slug, fingerprint2)
 
-      expect {
+      stub_successful_list_checkout_keys_request(
+        host, checkout_keys_path, api_token,
+        [{ key: checkout_key1 }, { key: checkout_key2 }]
+      )
+      stub_successful_delete_checkout_key_request(
+        host, checkout_key_path(project_slug, fingerprint1), api_token
+      )
+      stub_failed_delete_checkout_key_request(
+        host, checkout_key_path(project_slug, fingerprint2), api_token
+      )
+
+      expect do
         client.delete_checkout_keys
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{checkout_key_2_url} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{checkout_key2_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#create_ssh_key' do
+  describe '#create_ssh_key' do
     it 'creates an SSH key on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
-      private_key = File.read('spec/fixtures/1.private')
-      ssh_key = SSHKey.new(private_key)
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      ssh_keys_url =
-          'https://circleci.com/api/v1.1/project/github/org/repo/ssh-key?' +
-              "circle-token=#{api_token}"
+      key = ssh_key
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
 
-      expected_body = JSON.dump(
-          fingerprint: ssh_key.sha1_fingerprint,
-          private_key: ssh_key.private_key)
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      response = double('create ssh key response', status: 201)
+      expected_body = create_ssh_key_request_body(key)
+      stub_successful_create_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body
+      )
+
+      client.create_ssh_key(key.private_key)
+
       expect(Excon)
-          .to(receive(:post)
-              .with(ssh_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
-
-      client.create_ssh_key(private_key)
+        .to(have_received(:post)
+              .with(ssh_keys_url(host, project_slug, api_token),
+                    body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'passes the hostname when supplied' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
-      private_key = File.read('spec/fixtures/1.private')
-      hostname = "github.com"
-      ssh_key = SSHKey.new(private_key)
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      ssh_keys_url =
-          'https://circleci.com/api/v1.1/project/github/org/repo/ssh-key?' +
-              "circle-token=#{api_token}"
+      key = ssh_key
+      hostname = 'github.com'
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
+      ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
-      expected_body = JSON.dump(
-          fingerprint: ssh_key.sha1_fingerprint,
-          private_key: ssh_key.private_key,
-          hostname: hostname)
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      response = double('create ssh key response', status: 201)
+      expected_body = create_ssh_key_request_body(key, hostname)
+      stub_successful_create_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body
+      )
+
+      client.create_ssh_key(key.private_key, hostname: hostname)
+
       expect(Excon)
-          .to(receive(:post)
+        .to(have_received(:post)
               .with(ssh_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
-
-      client.create_ssh_key(private_key, hostname: hostname)
+                    body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      path = "/api/v1.1/project/github/org/repo/ssh-key?" +
-          "circle-token=#{api_token}"
       base_url = "#{host}/api"
-      private_key = File.read('spec/fixtures/1.private')
-      hostname = "github.com"
-      ssh_key = SSHKey.new(private_key)
 
-      ssh_keys_url = "#{host}#{path}"
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
+      ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      key = ssh_key
+      hostname = 'github.com'
 
-      expected_body = JSON.dump(
-          fingerprint: ssh_key.sha1_fingerprint,
-          private_key: ssh_key.private_key,
-          hostname: hostname)
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      response = double('create env var response',
-          status: 400,
-          data: {
-              host: host,
-              path: path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:post)
-              .with(ssh_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
+      expected_body = create_ssh_key_request_body(key, hostname)
+      stub_failed_create_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body
+      )
 
-      expect {
-        client.create_ssh_key(private_key, hostname: hostname)
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{host}#{path} 400 Bad Request"))
+      expect do
+        client.create_ssh_key(key.private_key, hostname: hostname)
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{ssh_keys_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#delete_ssh_key' do
+  describe '#delete_ssh_key' do
     it 'deletes an SSH key from the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      private_key = File.read('spec/fixtures/1.private')
-      fingerprint = SSHKey.new(private_key).sha1_fingerprint
+      key = ssh_key
       hostname = 'github.com'
 
-      ssh_keys_url =
-          "#{base_url}/v1.1/project/#{project_slug}/ssh-key?" +
-              "circle-token=#{api_token}"
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
+      ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
-
-      expected_body = JSON.dump(
-          fingerprint: fingerprint,
-          hostname: hostname
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
       )
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
 
-      response = double('delete ssh key response', status: 201)
+      expected_body = delete_ssh_key_request_body(key.fingerprint, hostname)
+      stub_successful_delete_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body
+      )
+
+      client.delete_ssh_key(key.fingerprint, hostname: hostname)
+
       expect(Excon)
-          .to(receive(:delete)
+        .to(have_received(:delete)
               .with(ssh_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
-
-      client.delete_ssh_key(fingerprint, hostname: hostname)
+                    body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'does not pass a hostname when none supplied' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      private_key = File.read('spec/fixtures/1.private')
-      fingerprint = SSHKey.new(private_key).sha1_fingerprint
+      key = ssh_key
 
-      ssh_keys_url =
-          "#{base_url}/v1.1/project/#{project_slug}/ssh-key?" +
-              "circle-token=#{api_token}"
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
+      ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
-
-      expected_body = JSON.dump(
-          fingerprint: fingerprint
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
       )
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
 
-      response = double('delete ssh key response', status: 201)
+      expected_body = delete_ssh_key_request_body(key.fingerprint)
+      stub_successful_delete_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body
+      )
+
+      client.delete_ssh_key(key.fingerprint)
+
       expect(Excon)
-          .to(receive(:delete)
+        .to(have_received(:delete)
               .with(ssh_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
-
-      client.delete_ssh_key(fingerprint)
+                    body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token)))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      path = "/api/v1.1/project/#{project_slug}/ssh-key?" +
-          "circle-token=#{api_token}"
       base_url = "#{host}/api"
 
-      private_key = File.read('spec/fixtures/1.private')
-      fingerprint = SSHKey.new(private_key).sha1_fingerprint
+      key = ssh_key
       hostname = 'github.com'
 
-      ssh_keys_url = "#{host}#{path}"
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
+      ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
-
-      expected_body = JSON.dump(
-          fingerprint: fingerprint,
-          hostname: hostname
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
       )
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
 
-      response = double('delete ssh key response',
-          status: 400,
-          data: {
-              host: host,
-              path: path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:delete)
-              .with(ssh_keys_url,
-                  body: expected_body,
-                  headers: expected_headers)
-              .and_return(response))
+      expected_body = delete_ssh_key_request_body(key.fingerprint, hostname)
+      stub_failed_delete_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body
+      )
 
-      expect {
-        client.delete_ssh_key(fingerprint, hostname: hostname)
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{host}#{path} 400 Bad Request"))
+      expect do
+        client.delete_ssh_key(key.fingerprint, hostname: hostname)
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{ssh_keys_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#find_ssh_keys' do
+  describe '#find_ssh_keys' do
     it 'finds all ssh keys on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      private_key_1 = File.read('spec/fixtures/1.private')
-      private_key_2 = File.read('spec/fixtures/2.private')
-      fingerprint_1 = SSHKey.new(private_key_1).sha1_fingerprint
-      fingerprint_2 = SSHKey.new(private_key_2).sha1_fingerprint
-      hostname_1 = 'github.com'
+      key1 = ssh_key
+      key2 = ssh_key
+      hostname1 = 'github.com'
 
-      settings_url =
-          "#{base_url}/v1.1/project/#{project_slug}/settings?" +
-              "circle-token=#{api_token}"
+      settings_path = settings_path(project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
-
-      response = double('get settings response',
-          status: 200,
-          body: JSON.dump({
-              ssh_keys: [
-                  {
-                      fingerprint: fingerprint_1,
-                      hostname: hostname_1,
-                      private_key: private_key_1
-                  },
-                  {
-                      fingerprint: fingerprint_2,
-                      private_key: private_key_2
-                  },
-              ]
-          }))
-      expect(Excon)
-          .to(receive(:get)
-              .with(settings_url,
-                  headers: expected_headers)
-              .and_return(response))
+      ssh_key1_response_body = ssh_key_response_body(key1, hostname1)
+      ssh_key2_response_body = ssh_key_response_body(key2)
+      ssh_keys_response_body = ssh_keys_response_body(
+        [ssh_key1_response_body, ssh_key2_response_body]
+      )
+      stub_successful_list_ssh_keys_request(
+        host, settings_path, api_token, ssh_keys_response_body
+      )
 
       ssh_keys = client.find_ssh_keys
 
       expect(ssh_keys)
-          .to(eq([
-              {
-                  fingerprint: fingerprint_1,
-                  hostname: hostname_1,
-                  private_key: private_key_1
-              },
-              {
-                  fingerprint: fingerprint_2,
-                  private_key: private_key_2
-              },
-          ]))
+        .to(eq([ssh_key1_response_body, ssh_key2_response_body]))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      path = '/api/v1.1/project/github/org/repo/settings?' +
-          "circle-token=#{api_token}"
       base_url = "#{host}/api"
 
-      settings_url = "#{host}#{path}"
+      settings_path = settings_path(project_slug, api_token)
+      settings_url = settings_url(host, project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      stub_failed_list_ssh_keys_request(api_token, host, settings_path)
 
-      response = double('get settings response',
-          status: 400,
-          data: {
-              host: host,
-              path: path,
-              reason_phrase: 'Bad Request'
-          })
-      allow(Excon)
-          .to(receive(:get)
-              .with(settings_url,
-                  headers: expected_headers)
-              .and_return(response))
-
-      expect {
+      expect do
         client.find_ssh_keys
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{host}#{path} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{settings_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#delete_ssh_keys' do
+  describe '#delete_ssh_keys' do
+    # rubocop:disable RSpec/MultipleExpectations
     it 'deletes each ssh key on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      private_key_1 = File.read('spec/fixtures/1.private')
-      private_key_2 = File.read('spec/fixtures/2.private')
-      fingerprint_1 = SSHKey.new(private_key_1).sha1_fingerprint
-      fingerprint_2 = SSHKey.new(private_key_2).sha1_fingerprint
-      hostname_1 = 'github.com'
+      key1 = ssh_key
+      key2 = ssh_key
+      hostname1 = 'github.com'
 
-      settings_url =
-          "#{base_url}/v1.1/project/#{project_slug}/settings?" +
-              "circle-token=#{api_token}"
-      ssh_keys_url =
-          "#{base_url}/v1.1/project/#{project_slug}/ssh-key?" +
-              "circle-token=#{api_token}"
+      settings_path = settings_path(project_slug, api_token)
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
-
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
-      expected_body_1 = JSON.dump(
-          fingerprint: fingerprint_1,
-          hostname: hostname_1
-      )
-      expected_body_2 = JSON.dump(
-          fingerprint: fingerprint_2
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
       )
 
-      expect(Excon)
-          .to(receive(:get)
-              .with(settings_url,
-                  headers: expected_headers)
-              .and_return(double('get settings response',
-                  status: 200,
-                  body: JSON.dump({
-                      ssh_keys: [
-                          {
-                              fingerprint: fingerprint_1,
-                              hostname: hostname_1,
-                              private_key: private_key_1
-                          },
-                          {
-                              fingerprint: fingerprint_2,
-                              private_key: private_key_2
-                          },
-                      ]
-                  }))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(ssh_keys_url,
-                  body: expected_body_1,
-                  headers: expected_headers)
-              .and_return(double('delete ssh key response', status: 201)))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(ssh_keys_url,
-                  body: expected_body_2,
-                  headers: expected_headers)
-              .and_return(double('delete ssh key response', status: 201)))
+      expected_body1 = delete_ssh_key_request_body(key1.fingerprint, hostname1)
+      expected_body2 = delete_ssh_key_request_body(key2.fingerprint)
+      ssh_keys_response_body = ssh_keys_response_body(
+        [ssh_key_response_body(key1, hostname1), ssh_key_response_body(key2)]
+      )
+      stub_successful_list_ssh_keys_request(
+        host, settings_path, api_token, ssh_keys_response_body
+      )
+      stub_successful_delete_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body1
+      )
+      stub_successful_delete_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body2
+      )
 
       client.delete_ssh_keys
+
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(ssh_keys_url(host, project_slug, api_token),
+                    body: JSON.dump(expected_body1),
+                    headers: authenticated_headers(api_token)))
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(ssh_keys_url(host, project_slug, api_token),
+                    body: JSON.dump(expected_body2),
+                    headers: authenticated_headers(api_token)))
     end
+    # rubocop:enable RSpec/MultipleExpectations
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      settings_path = '/api/v1.1/project/github/org/repo/settings?' +
-          "circle-token=#{api_token}"
-      ssh_keys_path = '/api/v1.1/project/github/org/repo/ssh-key?' +
-          "circle-token=#{api_token}"
       base_url = "#{host}/api"
 
-      private_key_1 = File.read('spec/fixtures/1.private')
-      private_key_2 = File.read('spec/fixtures/2.private')
-      fingerprint_1 = SSHKey.new(private_key_1).sha1_fingerprint
-      fingerprint_2 = SSHKey.new(private_key_2).sha1_fingerprint
-      hostname_1 = 'github.com'
+      settings_path = settings_path(project_slug, api_token)
+      ssh_keys_path = ssh_keys_path(project_slug, api_token)
 
-      settings_url = "#{host}#{settings_path}"
-      ssh_keys_url = "#{host}#{ssh_keys_path}"
+      key1 = ssh_key
+      key2 = ssh_key
+      hostname1 = 'github.com'
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
-      expected_body_1 = JSON.dump(
-          fingerprint: fingerprint_1,
-          hostname: hostname_1
-      )
-      expected_body_2 = JSON.dump(
-          fingerprint: fingerprint_2
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
       )
 
-      expect(Excon)
-          .to(receive(:get)
-              .with(settings_url,
-                  headers: expected_headers)
-              .and_return(double('get settings response',
-                  status: 200,
-                  body: JSON.dump({
-                      ssh_keys: [
-                          {
-                              fingerprint: fingerprint_1,
-                              hostname: hostname_1,
-                              private_key: private_key_1
-                          },
-                          {
-                              fingerprint: fingerprint_2,
-                              private_key: private_key_2
-                          },
-                      ]
-                  }))))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(ssh_keys_url,
-                  body: expected_body_1,
-                  headers: expected_headers)
-              .and_return(double('delete ssh key response', status: 201)))
-      expect(Excon)
-          .to(receive(:delete)
-              .with(ssh_keys_url,
-                  body: expected_body_2,
-                  headers: expected_headers)
-              .and_return(double('delete ssh key response',
-                  status: 400,
-                  data: {
-                      host: host,
-                      path: ssh_keys_path,
-                      reason_phrase: 'Bad Request'
-                  })))
+      expected_body1 = delete_ssh_key_request_body(key1.fingerprint, hostname1)
+      expected_body2 = delete_ssh_key_request_body(key2.fingerprint)
 
-      expect {
+      ssh_keys_response_body = ssh_keys_response_body(
+        [ssh_key_response_body(key1, hostname1), ssh_key_response_body(key2)]
+      )
+      stub_successful_list_ssh_keys_request(
+        host, settings_path, api_token, ssh_keys_response_body
+      )
+      stub_successful_delete_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body1
+      )
+      stub_failed_delete_ssh_key_request(
+        host, ssh_keys_path, api_token, expected_body2
+      )
+
+      expect do
         client.delete_ssh_keys
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{ssh_keys_url} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{ssh_keys_url} 400 Bad Request"
+             ))
     end
   end
 
-  context '#follow_project' do
+  describe '#follow_project' do
     it 'deletes each ssh key on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
-      base_url = 'https://circleci.com/api'
+      host = 'https://circleci.com'
+      base_url = "#{host}/api"
 
-      follow_url =
-          "#{base_url}/v1.1/project/#{project_slug}/follow?" +
-              "circle-token=#{api_token}"
+      follow_url = follow_url(host, project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      expected_headers = authenticated_headers(api_token)
 
-      expect(Excon)
-          .to(receive(:post)
-              .with(follow_url,
-                  headers: expected_headers)
-              .and_return(double('follow project response',
-                  status: 200,
-                  body: JSON.dump({
-                      followed: true
-                  }))))
+      stub_successful_follow_request(host, project_slug, api_token)
 
       client.follow_project
+
+      expect(Excon)
+        .to(have_received(:post)
+              .with(follow_url,
+                    headers: expected_headers))
     end
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
       host = 'https://circleci.com'
-      follow_path = '/api/v1.1/project/github/org/repo/follow?' +
-          "circle-token=#{api_token}"
       base_url = "#{host}/api"
 
-      follow_url = "#{host}#{follow_path}"
+      follow_url = follow_url(host, project_slug, api_token)
 
-      client = RakeCircleCI::Client.new(
-          project_slug: project_slug,
-          api_token: api_token,
-          base_url: base_url)
+      client = described_class.new(
+        project_slug: project_slug,
+        api_token: api_token,
+        base_url: base_url
+      )
 
-      expected_headers = {
-          'Circle-Token': api_token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      }
+      stub_failed_follow_request(api_token, host, project_slug)
 
-      expect(Excon)
-          .to(receive(:post)
-              .with(follow_url,
-                  headers: expected_headers)
-              .and_return(double('follow project response',
-                  status: 400,
-                  data: {
-                      host: host,
-                      path: follow_path,
-                      reason_phrase: 'Bad Request'
-                  })))
-
-      expect {
+      expect do
         client.follow_project
-      }.to(raise_error(RuntimeError,
-          "Unsuccessful request: #{follow_url} 400 Bad Request"))
+      end.to(raise_error(
+               RuntimeError,
+               "Unsuccessful request: #{follow_url} 400 Bad Request"
+             ))
     end
+  end
+
+  def ssh_key
+    key = SSHKey.generate
+    Struct.new(:public_key, :private_key, :fingerprint)
+          .new(key.ssh_public_key,
+               key.private_key,
+               key.sha1_fingerprint)
+  end
+
+  def authenticated_headers(api_token)
+    {
+      'Circle-Token': api_token,
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    }
+  end
+
+  def env_vars_path(project_slug)
+    "/api/v2/project/#{project_slug}/envvar"
+  end
+
+  def env_var_path(project_slug, env_var_name)
+    "#{env_vars_path(project_slug)}/#{env_var_name}"
+  end
+
+  def checkout_keys_path(project_slug)
+    "/api/v1.1/project/#{project_slug}/checkout-key"
+  end
+
+  def checkout_key_path(project_slug, fingerprint)
+    "#{checkout_keys_path(project_slug)}/#{fingerprint}"
+  end
+
+  def ssh_keys_path(project_slug, api_token)
+    "/api/v1.1/project/#{project_slug}/ssh-key?circle-token=#{api_token}"
+  end
+
+  def settings_path(project_slug, api_token)
+    "/api/v1.1/project/#{project_slug}/settings?circle-token=#{api_token}"
+  end
+
+  def follow_path(project_slug, api_token)
+    "/api/v1.1/project/#{project_slug}/follow?circle-token=#{api_token}"
+  end
+
+  def env_vars_url(host, project_slug)
+    "#{host}#{env_vars_path(project_slug)}"
+  end
+
+  def env_var_url(host, project_slug, env_var_name)
+    "#{host}#{env_var_path(project_slug, env_var_name)}"
+  end
+
+  def checkout_keys_url(host, project_slug)
+    "#{host}#{checkout_keys_path(project_slug)}"
+  end
+
+  def checkout_key_url(host, project_slug, fingerprint)
+    "#{host}#{checkout_key_path(project_slug, fingerprint)}"
+  end
+
+  def ssh_keys_url(host, project_slug, api_token)
+    "#{host}#{ssh_keys_path(project_slug, api_token)}"
+  end
+
+  def settings_url(host, project_slug, api_token)
+    "#{host}#{settings_path(project_slug, api_token)}"
+  end
+
+  def follow_url(host, project_slug, api_token)
+    "#{host}#{follow_path(project_slug, api_token)}"
+  end
+
+  def create_env_var_request_body(env_var_name, env_var_value)
+    {
+      name: env_var_name,
+      value: env_var_value
+    }
+  end
+
+  def create_checkout_key_request_body
+    {
+      type: 'deploy-key'
+    }
+  end
+
+  def create_ssh_key_request_body(key, hostname = nil)
+    body = {
+      fingerprint: key.fingerprint,
+      private_key: key.private_key
+    }
+    hostname ? body.merge(hostname: hostname) : body
+  end
+
+  def delete_ssh_key_request_body(fingerprint, hostname = nil)
+    body = {
+      fingerprint: fingerprint
+    }
+    hostname ? body.merge(hostname: hostname) : body
+  end
+
+  def bad_request_response_body(host, path)
+    {
+      host: host,
+      path: path,
+      reason_phrase: 'Bad Request'
+    }
+  end
+
+  def env_vars_response_body(env_var_names)
+    { items: env_var_names.map { |name| { name: name } } }
+  end
+
+  def checkout_key_response_body(opts)
+    {
+      type: opts[:type] || 'deploy-key',
+      ssh_key: opts[:key].public_key,
+      fingerprint: opts[:key].fingerprint,
+      login: opts[:login] || nil,
+      preferred: true,
+      time: opts[:time] || '2021-01-01T23:29:01.432Z'
+    }
+  end
+
+  def checkout_keys_response_body(checkout_keys)
+    checkout_keys.map do |checkout_key|
+      checkout_key_response_body(checkout_key)
+    end
+  end
+
+  def successful_delete_checkout_key_response_body
+    { message: 'ok' }
+  end
+
+  def ssh_key_response_body(key, hostname = nil)
+    response = {
+      fingerprint: key.fingerprint,
+      private_key: key.private_key
+    }
+    response.merge(hostname: hostname)
+  end
+
+  def ssh_keys_response_body(keys)
+    {
+      ssh_keys: keys
+    }
+  end
+
+  def follow_response_body
+    {
+      followed: true
+    }
+  end
+
+  def response_double(description, opts)
+    instance_double(Excon::Response, description, opts)
+  end
+
+  def successful_create_env_var_response_double
+    response_double('create env var response', status: 201)
+  end
+
+  def failed_create_env_var_response_double(host, path)
+    response_double(
+      'create env var response',
+      status: 400,
+      data: bad_request_response_body(host, path)
+    )
+  end
+
+  def successful_delete_env_var_response_double(identifier = nil)
+    response_double(
+      "delete env var#{identifier ? " #{identifier}" : ''} response",
+      status: 201
+    )
+  end
+
+  def failed_delete_env_var_response_double(host, path, identifier = nil)
+    response_double(
+      "delete env var#{identifier ? " #{identifier}" : ''} response",
+      status: 400,
+      data: bad_request_response_body(host, path)
+    )
+  end
+
+  def successful_list_env_vars_response_double(env_var_names)
+    response_double(
+      'list env vars response',
+      status: 201,
+      body: JSON.dump(env_vars_response_body(env_var_names))
+    )
+  end
+
+  def failed_list_env_vars_response_double(host, path)
+    response_double(
+      'list env vars response',
+      status: 400,
+      data: bad_request_response_body(host, path)
+    )
+  end
+
+  def successful_create_checkout_key_response_double(key)
+    response_double(
+      'create checkout key response',
+      status: 201,
+      body: JSON.dump(checkout_key_response_body(key: key))
+    )
+  end
+
+  def failed_create_checkout_key_response_double(host, checkout_keys_path)
+    response_double(
+      'create checkout key response',
+      status: 400,
+      data: bad_request_response_body(host, checkout_keys_path)
+    )
+  end
+
+  def successful_delete_checkout_key_response_double
+    response_double(
+      'delete checkout key response',
+      status: 200,
+      body: JSON.dump(successful_delete_checkout_key_response_body)
+    )
+  end
+
+  def failed_delete_checkout_key_response_double(host, checkout_key_path)
+    response_double(
+      'delete checkout key response',
+      status: 400,
+      data: bad_request_response_body(host, checkout_key_path)
+    )
+  end
+
+  def successful_list_checkout_keys_response_double(checkout_keys)
+    response_double(
+      'get checkout keys response',
+      status: 200,
+      body: JSON.dump(checkout_keys_response_body(checkout_keys))
+    )
+  end
+
+  def failed_list_checkout_keys_response_double(host, checkout_keys_path)
+    response_double(
+      'get checkout keys response',
+      status: 400,
+      data: bad_request_response_body(host, checkout_keys_path)
+    )
+  end
+
+  def successful_create_ssh_key_response_double
+    response_double(
+      'create ssh key response',
+      status: 201
+    )
+  end
+
+  def failed_create_ssh_key_response_double(host, ssh_keys_path)
+    response_double(
+      'create ssh key response',
+      status: 400,
+      data: bad_request_response_body(host, ssh_keys_path)
+    )
+  end
+
+  def successful_delete_ssh_key_response_double
+    response_double('delete ssh key response', status: 201)
+  end
+
+  def failed_delete_ssh_key_response_double(host, ssh_keys_path)
+    response_double(
+      'delete ssh key response',
+      status: 400,
+      data: bad_request_response_body(host, ssh_keys_path)
+    )
+  end
+
+  def successful_list_ssh_keys_response_double(body)
+    response_double(
+      'get settings response',
+      status: 200,
+      body: JSON.dump(body)
+    )
+  end
+
+  def failed_list_ssh_keys_response_double(host, ssh_keys_path)
+    response_double(
+      'get settings response',
+      status: 400,
+      data: bad_request_response_body(host, ssh_keys_path)
+    )
+  end
+
+  def successful_follow_response_double
+    response_double(
+      'follow project response',
+      status: 200,
+      body: JSON.dump(follow_response_body)
+    )
+  end
+
+  def failed_follow_response_double(host, project_slug, api_token)
+    response_double(
+      'follow project response',
+      status: 400,
+      data: bad_request_response_body(
+        host, follow_path(project_slug, api_token)
+      )
+    )
+  end
+
+  def stub_successful_create_env_var_request(
+    host, env_vars_path, api_token, env_var
+  )
+    allow(Excon)
+      .to(receive(:post)
+            .with("#{host}#{env_vars_path}",
+                  body: JSON.dump(env_var),
+                  headers: authenticated_headers(api_token))
+            .and_return(successful_create_env_var_response_double))
+  end
+
+  def stub_failed_create_env_var_request(
+    host, env_vars_path, api_token, body
+  )
+    allow(Excon)
+      .to(receive(:post)
+            .with("#{host}#{env_vars_path}",
+                  body: JSON.dump(body),
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              failed_create_env_var_response_double(host, env_vars_path)
+            ))
+  end
+
+  def stub_successful_list_env_vars_request(
+    host, env_vars_path, api_token, env_var_names
+  )
+    allow(Excon)
+      .to(receive(:get)
+            .with("#{host}#{env_vars_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              successful_list_env_vars_response_double(env_var_names)
+            ))
+  end
+
+  def stub_failed_list_env_vars_request(host, env_vars_path, api_token)
+    allow(Excon)
+      .to(receive(:get)
+            .with("#{host}#{env_vars_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(failed_list_env_vars_response_double(
+                          host, env_vars_path
+                        )))
+  end
+
+  def stub_successful_delete_env_var_request(
+    host, env_var_path, api_token, identifier = nil
+  )
+    allow(Excon)
+      .to(receive(:delete)
+            .with("#{host}#{env_var_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              successful_delete_env_var_response_double(identifier)
+            ))
+  end
+
+  def stub_failed_delete_env_var_request(
+    host, env_var_path, api_token, identifier = nil
+  )
+    allow(Excon)
+      .to(receive(:delete)
+            .with("#{host}#{env_var_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              failed_delete_env_var_response_double(
+                host, env_var_path, identifier
+              )
+            ))
+  end
+
+  def stub_successful_create_checkout_key_request(
+    host, checkout_keys_path, api_token, expected_body
+  )
+    allow(Excon)
+      .to(receive(:post)
+            .with("#{host}#{checkout_keys_path}",
+                  body: JSON.dump(expected_body),
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              successful_create_checkout_key_response_double(ssh_key)
+            ))
+  end
+
+  def stub_failed_create_checkout_key_request(
+    host, checkout_keys_path, api_token, expected_body
+  )
+    allow(Excon)
+      .to(receive(:post)
+            .with("#{host}#{checkout_keys_path}",
+                  body: JSON.dump(expected_body),
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              failed_create_checkout_key_response_double(
+                host, checkout_keys_path
+              )
+            ))
+  end
+
+  def stub_successful_delete_checkout_key_request(
+    host, checkout_key_path, api_token
+  )
+    allow(Excon)
+      .to(receive(:delete)
+            .with("#{host}#{checkout_key_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(successful_delete_checkout_key_response_double))
+  end
+
+  def stub_failed_delete_checkout_key_request(
+    host, checkout_key_path, api_token
+  )
+    allow(Excon)
+      .to(receive(:delete)
+            .with("#{host}#{checkout_key_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              failed_delete_checkout_key_response_double(
+                host, checkout_key_path
+              )
+            ))
+  end
+
+  def stub_successful_list_checkout_keys_request(
+    host, checkout_keys_path, api_token, checkout_keys
+  )
+    allow(Excon)
+      .to(receive(:get)
+            .with("#{host}#{checkout_keys_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              successful_list_checkout_keys_response_double(
+                checkout_keys
+              )
+            ))
+  end
+
+  def stub_failed_list_checkout_keys_request(
+    host, checkout_keys_path, api_token
+  )
+    allow(Excon)
+      .to(receive(:get)
+            .with("#{host}#{checkout_keys_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(
+              failed_list_checkout_keys_response_double(
+                host, checkout_keys_path
+              )
+            ))
+  end
+
+  def stub_successful_create_ssh_key_request(
+    host, ssh_keys_path, api_token, body
+  )
+    allow(Excon)
+      .to(receive(:post)
+            .with("#{host}#{ssh_keys_path}",
+                  body: JSON.dump(body),
+                  headers: authenticated_headers(api_token))
+            .and_return(successful_create_ssh_key_response_double))
+  end
+
+  def stub_failed_create_ssh_key_request(host, ssh_keys_path, api_token, body)
+    allow(Excon)
+      .to(receive(:post)
+            .with("#{host}#{ssh_keys_path}",
+                  body: JSON.dump(body),
+                  headers: authenticated_headers(api_token))
+            .and_return(failed_create_ssh_key_response_double(
+                          host, ssh_keys_path
+                        )))
+  end
+
+  def stub_successful_delete_ssh_key_request(
+    host, ssh_keys_path, api_token, body
+  )
+    allow(Excon)
+      .to(receive(:delete)
+            .with("#{host}#{ssh_keys_path}",
+                  body: JSON.dump(body),
+                  headers: authenticated_headers(api_token))
+            .and_return(successful_delete_ssh_key_response_double))
+  end
+
+  def stub_failed_delete_ssh_key_request(host, ssh_keys_path, api_token, body)
+    allow(Excon)
+      .to(receive(:delete)
+            .with("#{host}#{ssh_keys_path}",
+                  body: JSON.dump(body),
+                  headers: authenticated_headers(api_token))
+            .and_return(failed_delete_ssh_key_response_double(
+                          host, ssh_keys_path
+                        )))
+  end
+
+  def stub_successful_list_ssh_keys_request(
+    host, settings_path, api_token, body
+  )
+    allow(Excon)
+      .to(receive(:get)
+            .with("#{host}#{settings_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(successful_list_ssh_keys_response_double(
+                          body
+                        )))
+  end
+
+  def stub_failed_list_ssh_keys_request(api_token, host, ssh_keys_path)
+    allow(Excon)
+      .to(receive(:get)
+            .with("#{host}#{ssh_keys_path}",
+                  headers: authenticated_headers(api_token))
+            .and_return(failed_list_ssh_keys_response_double(
+                          host, ssh_keys_path
+                        )))
+  end
+
+  def stub_successful_follow_request(host, project_slug, api_token)
+    allow(Excon)
+      .to(receive(:post)
+            .with(follow_url(host, project_slug, api_token),
+                  headers: authenticated_headers(api_token))
+            .and_return(successful_follow_response_double))
+  end
+
+  def stub_failed_follow_request(api_token, host, project_slug)
+    allow(Excon)
+      .to(receive(:post)
+            .with(follow_url(host, project_slug, api_token),
+                  headers: authenticated_headers(api_token))
+            .and_return(failed_follow_response_double(
+                          host, project_slug, api_token
+                        )))
   end
 end

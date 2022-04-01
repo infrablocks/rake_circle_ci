@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'task_sets/environment_variables'
 require_relative 'task_sets/checkout_keys'
 require_relative 'task_sets/ssh_keys'

@@ -1,15 +1,17 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 describe RakeCircleCI::Tasks::CheckoutKeys::Destroy do
-  include_context :rake
+  include_context 'rake'
 
-  before(:each) do
+  before do
     stub_output
     stub_circle_ci_client
   end
 
   def define_task(opts = {}, &block)
-    opts = {namespace: :checkout_keys}.merge(opts)
+    opts = { namespace: :checkout_keys }.merge(opts)
 
     namespace opts[:namespace] do
       subject.define(opts, &block)
@@ -18,86 +20,99 @@ describe RakeCircleCI::Tasks::CheckoutKeys::Destroy do
 
   it 'adds a destroy task in the namespace in which it is created' do
     define_task(
-        project_slug: 'github/org/repo',
-        api_token: 'some-token')
+      project_slug: 'github/org/repo',
+      api_token: 'some-token'
+    )
 
-    expect(Rake::Task.task_defined?('checkout_keys:destroy'))
-        .to(be(true))
+    expect(Rake.application)
+      .to(have_task_defined('checkout_keys:destroy'))
   end
 
   it 'gives the destroy task a description' do
     define_task(
-        project_slug: 'github/org/repo',
-        api_token: 'some-token')
+      project_slug: 'github/org/repo',
+      api_token: 'some-token'
+    )
 
     expect(Rake::Task['checkout_keys:destroy'].full_comment)
-        .to(eq('Destroy checkout keys in the github/org/repo project'))
+      .to(eq('Destroy checkout keys in the github/org/repo project'))
   end
 
   it 'fails if no project slug is provided' do
     define_task(
-        api_token: 'some-token')
+      api_token: 'some-token'
+    )
 
-    expect {
+    expect do
       Rake::Task['checkout_keys:destroy'].invoke
-    }.to raise_error(RakeFactory::RequiredParameterUnset)
+    end.to raise_error(RakeFactory::RequiredParameterUnset)
   end
 
   it 'fails if no API token is provided' do
     define_task(
-        project_slug: 'github/org/repo')
+      project_slug: 'github/org/repo'
+    )
 
-    expect {
+    expect do
       Rake::Task['checkout_keys:destroy'].invoke
-    }.to raise_error(RakeFactory::RequiredParameterUnset)
+    end.to raise_error(RakeFactory::RequiredParameterUnset)
   end
 
   it 'defaults to a base URL of https://circleci.com/api' do
     define_task(
-        project_slug: 'github/org/repo',
-        api_token: 'some-token')
+      project_slug: 'github/org/repo',
+      api_token: 'some-token'
+    )
 
     rake_task = Rake::Task['checkout_keys:destroy']
     test_task = rake_task.creator
 
     expect(test_task.base_url)
-        .to(eq('https://circleci.com/api'))
+      .to(eq('https://circleci.com/api'))
   end
 
-  it 'uses the CircleCI client to delete the checkout keys from ' +
-      'the project' do
+  it 'uses the CircleCI client to delete the checkout keys from ' \
+     'the project' do
     project_slug = 'github/org/repo'
     api_token = 'some-token'
 
-    client = double('CircleCI client')
+    client = instance_double(RakeCircleCI::Client)
 
     allow(RakeCircleCI::Client)
-        .to(receive(:new)
+      .to(receive(:new)
             .with(hash_including(
-                project_slug: project_slug,
-                api_token: api_token,
-                base_url: 'https://circleci.com/api'))
+                    project_slug: project_slug,
+                    api_token: api_token,
+                    base_url: 'https://circleci.com/api'
+                  ))
             .and_return(client))
 
-    expect(client).to(receive(:delete_checkout_keys))
+    allow(client).to(receive(:delete_checkout_keys))
 
     define_task(
-        project_slug: project_slug,
-        api_token: api_token)
+      project_slug: project_slug,
+      api_token: api_token
+    )
 
     Rake::Task['checkout_keys:destroy'].invoke
+
+    expect(client).to(have_received(:delete_checkout_keys))
   end
 
   def stub_output
-    [:print, :puts].each do |method|
+    # rubocop:disable RSpec/AnyInstance
+    %i[print puts].each do |method|
       allow_any_instance_of(Kernel).to(receive(method))
       allow($stdout).to(receive(method))
       allow($stderr).to(receive(method))
     end
+    # rubocop:enable RSpec/AnyInstance
   end
 
   def stub_circle_ci_client
-    client = double('CircleCI client', :delete_checkout_keys => nil)
-    allow(RakeCircleCI::Client).to(receive(:new).and_return(client))
+    client = instance_double(RakeCircleCI::Client, delete_checkout_keys: nil)
+    allow(RakeCircleCI::Client)
+      .to(receive(:new)
+            .and_return(client))
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rake_factory'
 
 require_relative '../tasks'
@@ -17,17 +19,17 @@ module RakeCircleCI
       parameter :ensure_task_name, default: :ensure
 
       task Tasks::EnvironmentVariables::Provision,
-          name: RakeFactory::DynamicValue.new { |ts|
-            ts.provision_task_name
-          }
+           name: RakeFactory::DynamicValue.new { |ts|
+             ts.provision_task_name
+           }
       task Tasks::EnvironmentVariables::Destroy,
-          name: RakeFactory::DynamicValue.new { |ts|
-            ts.destroy_task_name
-          }
+           name: RakeFactory::DynamicValue.new { |ts|
+             ts.destroy_task_name
+           }
       task Tasks::EnvironmentVariables::Ensure,
-          name: RakeFactory::DynamicValue.new { |ts|
-            ts.ensure_task_name
-          }
+           name: RakeFactory::DynamicValue.new { |ts|
+             ts.ensure_task_name
+           }
     end
   end
 end
