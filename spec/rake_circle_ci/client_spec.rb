@@ -59,7 +59,7 @@ describe RakeCircleCI::Client do
         client.create_env_var(env_var_name, env_var_value)
       end.to(raise_error(
                RuntimeError,
-               "Unsuccessful request: #{env_vars_url(host, project_slug)} "\
+               "Unsuccessful request: #{env_vars_url(host, project_slug)} " \
                '400 Bad Request'
              ))
     end
