@@ -170,6 +170,7 @@ describe RakeCircleCI::Client do
   end
 
   describe '#delete_env_vars' do
+    # rubocop:disable RSpec/MultipleExpectations
     it 'deletes each environment variables on the project' do
       project_slug = 'github/org/repo'
       api_token = 'some-token'
@@ -201,7 +202,17 @@ describe RakeCircleCI::Client do
       )
 
       client.delete_env_vars
+
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(env_var_url(host, project_slug, env_var_1_name),
+                    headers: authenticated_headers(api_token)))
+      expect(Excon)
+        .to(have_received(:delete)
+              .with(env_var_url(host, project_slug, env_var_2_name),
+                    headers: authenticated_headers(api_token)))
     end
+    # rubocop:enable RSpec/MultipleExpectations
 
     it 'raises an exception on failure' do
       project_slug = 'github/org/repo'
