@@ -2,6 +2,7 @@
 
 require 'yaml'
 require 'rake_circle_ci'
+require 'rake_git_crypt'
 require 'rake_github'
 require 'rake_ssh'
 require 'rake_gpg'
@@ -14,11 +15,39 @@ task default: %i[
   test:unit
 ]
 
+namespace :git_crypt do
+  RakeGitCrypt::Tasks::Init.define
+  RakeGitCrypt::Tasks::Lock.define
+  RakeGitCrypt::Tasks::Unlock.define
+  RakeGitCrypt::Tasks::Uninstall.define(
+    delete_secrets_task_name: :'secrets:delete'
+  )
+  RakeGitCrypt::Tasks::AddUser.define(
+    name: :add_user_by_key_path,
+    argument_names: [:gpg_user_key_path]
+  ) do |t, args|
+    t.gpg_user_key_path = args.gpg_user_key_path
+  end
+  RakeGitCrypt::Tasks::AddUsers.define(
+    gpg_user_key_paths: %w[
+      config/gpg/toby.gpg.public
+      config/gpg/liam.gpg.public
+      config/gpg/jonas.gpg.public
+    ]
+  )
+end
+
 namespace :encryption do
+  namespace :directory do
+    desc 'Ensure CI secrets directory exists.'
+    task :ensure do
+      FileUtils.mkdir_p('config/secrets/ci')
+    end
+  end
+
   namespace :passphrase do
-    desc 'Generate encryption passphrase for CI GPG key'
-    task :generate do
-      FileUtils.mkdir_p('config/secrets/ci/')
+    desc 'Generate encryption passphrase used by CI.'
+    task generate: ['directory:ensure'] do
       File.write('config/secrets/ci/encryption.passphrase',
                  SecureRandom.base64(36))
     end
@@ -41,6 +70,20 @@ namespace :keys do
       owner_email: 'maintainers@infrablocks.io',
       owner_comment: 'rake_circle_ci CI Key'
     )
+  end
+end
+
+namespace :secrets do
+  desc 'Regenerate all generatable secrets.'
+  task regenerate: %w[
+    encryption:passphrase:generate
+    keys:deploy:generate
+    keys:gpg:generate
+  ]
+
+  desc 'Delete all secrets.'
+  task :delete do
+    rm_rf 'config/secrets'
   end
 end
 
