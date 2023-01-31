@@ -15,27 +15,20 @@ task default: %i[
   test:unit
 ]
 
-namespace :git_crypt do
-  RakeGitCrypt::Tasks::Init.define
-  RakeGitCrypt::Tasks::Lock.define
-  RakeGitCrypt::Tasks::Unlock.define
-  RakeGitCrypt::Tasks::Uninstall.define(
-    delete_secrets_task_name: :'secrets:delete'
-  )
-  RakeGitCrypt::Tasks::AddUser.define(
-    name: :add_user_by_key_path,
-    argument_names: [:gpg_user_key_path]
-  ) do |t, args|
-    t.gpg_user_key_path = args.gpg_user_key_path
-  end
-  RakeGitCrypt::Tasks::AddUsers.define(
-    gpg_user_key_paths: %w[
-      config/gpg/toby.gpg.public
-      config/gpg/liam.gpg.public
-      config/gpg/jonas.gpg.public
-    ]
-  )
-end
+RakeGitCrypt.define_standard_tasks(
+  namespace: :git_crypt,
+
+  provision_secrets_task_name: :'secrets:provision',
+  destroy_secrets_task_name: :'secrets:destroy',
+
+  install_commit_task_name: :'git:commit',
+  uninstall_commit_task_name: :'git:commit',
+
+  gpg_user_key_paths: %w[
+    config/gpg
+    config/secrets/ci/gpg.public
+  ]
+)
 
 namespace :encryption do
   namespace :directory do
@@ -74,16 +67,46 @@ namespace :keys do
 end
 
 namespace :secrets do
-  desc 'Regenerate all generatable secrets.'
-  task regenerate: %w[
+  # task :generate do |t|
+  #   t.generator_tasks = %w[
+  #     keys:deploy:generate
+  #     keys:gpg:generate
+  #   ]
+  #   t.destination = RakeSecrets::Destinations::FileSystem.new
+  #   t.destination = RakeSecrets::Destinations::Vault.new
+  #
+  #   # generates based on definition
+  #   # template out file in secrets directory
+  # end
+  # task :collect do
+  #   # prompt for specific value
+  #   # template out file in secrets directory
+  # end
+
+  desc 'Generate all generatable secrets.'
+  task generate: %w[
     encryption:passphrase:generate
     keys:deploy:generate
     keys:gpg:generate
   ]
 
+  desc 'Provision all secrets.'
+  task provision: [:generate]
+
   desc 'Delete all secrets.'
-  task :delete do
+  task :destroy do
     rm_rf 'config/secrets'
+  end
+
+  desc 'Rotate all secrets.'
+  task rotate: [:'git_crypt:reinstall']
+end
+
+namespace :git do
+  desc 'Commit all changes'
+  task :commit, [:message] do |_, args|
+    sh('git', 'add', '-A')
+    sh('git', 'commit', '-m', args.message)
   end
 end
 
