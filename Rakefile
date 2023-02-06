@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
-require 'yaml'
 require 'rake_circle_ci'
+require 'rake_git'
 require 'rake_git_crypt'
 require 'rake_github'
-require 'rake_ssh'
 require 'rake_gpg'
-require 'securerandom'
+require 'rake_ssh'
 require 'rspec/core/rake_task'
 require 'rubocop/rake_task'
+require 'securerandom'
+require 'yaml'
 
 task default: %i[
   library:fix
@@ -29,6 +30,14 @@ RakeGitCrypt.define_standard_tasks(
     config/secrets/ci/gpg.public
   ]
 )
+
+namespace :git do
+  RakeGit.define_commit_task(
+    argument_names: [:message]
+  ) do |t, args|
+    t.message = args.message
+  end
+end
 
 namespace :encryption do
   namespace :directory do
@@ -100,14 +109,6 @@ namespace :secrets do
 
   desc 'Rotate all secrets.'
   task rotate: [:'git_crypt:reinstall']
-end
-
-namespace :git do
-  desc 'Commit all changes'
-  task :commit, [:message] do |_, args|
-    sh('git', 'add', '-A')
-    sh('git', 'commit', '-m', args.message)
-  end
 end
 
 RuboCop::RakeTask.new
