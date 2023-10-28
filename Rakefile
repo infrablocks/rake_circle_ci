@@ -170,7 +170,7 @@ RakeGithub.define_repository_tasks(
   t.deploy_keys = [
     {
       title: 'CircleCI',
-      ssh_key: File.read('config/secrets/ci/ssh.public')
+      public_key: File.read('config/secrets/ci/ssh.public')
     }
   ]
   t.branch_name = args.branch_name
