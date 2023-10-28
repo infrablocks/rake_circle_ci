@@ -18,11 +18,14 @@ Metrics/BlockLength:
 Style/Documentation:
   Enabled: false
 
-Style/SymbolProc:
-  Enabled: false
-
 RSpec/ExampleLength:
   Max: 40
 
+Style/SymbolProc:
+  Enabled: false
+
 Gemspec/RequireMFA:
+  Enabled: false
+
+Gemspec/DevelopmentDependencies:
   Enabled: false

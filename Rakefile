@@ -48,10 +48,12 @@ namespace :encryption do
   end
 
   namespace :passphrase do
-    desc 'Generate encryption passphrase used by CI.'
+    desc 'Generate encryption passphrase for CI GPG key'
     task generate: ['directory:ensure'] do
-      File.write('config/secrets/ci/encryption.passphrase',
-                 SecureRandom.base64(36))
+      File.write(
+        'config/secrets/ci/encryption.passphrase',
+        SecureRandom.base64(36)
+      )
     end
   end
 end
@@ -91,6 +93,16 @@ namespace :secrets do
   #   # prompt for specific value
   #   # template out file in secrets directory
   # end
+
+  namespace :directory do
+    desc 'Ensure secrets directory exists and is set up correctly'
+    task :ensure do
+      FileUtils.mkdir_p('config/secrets')
+      unless File.exist?('config/secrets/.unlocked')
+        File.write('config/secrets/.unlocked', 'true')
+      end
+    end
+  end
 
   desc 'Generate all generatable secrets.'
   task generate: %w[
@@ -168,7 +180,6 @@ end
 namespace :pipeline do
   desc 'Prepare CircleCI Pipeline'
   task prepare: %i[
-    circle_ci:project:follow
     circle_ci:env_vars:ensure
     circle_ci:checkout_keys:ensure
     circle_ci:ssh_keys:ensure

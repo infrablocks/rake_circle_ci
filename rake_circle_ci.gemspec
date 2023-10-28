@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'colored2', '~> 3.1'
   spec.add_dependency 'excon', '~> 0.72'
-  spec.add_dependency 'rake_factory', '~> 0.23'
+  spec.add_dependency 'rake_factory', '~> 0.31'
   spec.add_dependency 'sshkey', '~> 2.0'
 
   spec.metadata['rubygems_mfa_required'] = 'false'
