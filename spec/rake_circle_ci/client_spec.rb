@@ -14,9 +14,9 @@ describe RakeCircleCI::Client do
       env_var_value = 'value-one'
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = create_env_var_request_body(
@@ -31,8 +31,10 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:post)
               .with(env_vars_url(host, project_slug),
-                    body: JSON.dump(expected_body),
-                    headers: authenticated_headers(api_token)))
+                    {
+                      body: JSON.dump(expected_body),
+                      headers: authenticated_headers(api_token)
+                    }))
     end
 
     it 'raises an exception on failure' do
@@ -45,9 +47,9 @@ describe RakeCircleCI::Client do
       env_var_value = 'value-one'
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = create_env_var_request_body(env_var_name, env_var_value)
@@ -74,9 +76,9 @@ describe RakeCircleCI::Client do
 
       env_var_name = 'THING_ONE'
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_successful_delete_env_var_request(
@@ -88,7 +90,7 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:delete)
               .with(env_var_url(host, project_slug, env_var_name),
-                    headers: authenticated_headers(api_token)))
+                    { headers: authenticated_headers(api_token) }))
     end
 
     it 'raises an exception on failure' do
@@ -102,9 +104,9 @@ describe RakeCircleCI::Client do
       env_var_url = env_var_url(host, project_slug, env_var_name)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_failed_delete_env_var_request(host, env_var_path, api_token)
@@ -128,9 +130,9 @@ describe RakeCircleCI::Client do
       env_var_2_name = 'THING_TWO'
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_successful_list_env_vars_request(
@@ -153,9 +155,9 @@ describe RakeCircleCI::Client do
       env_vars_url = env_vars_url(host, project_slug)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_failed_list_env_vars_request(host, env_vars_path, api_token)
@@ -185,9 +187,9 @@ describe RakeCircleCI::Client do
       env_var_2_path = env_var_path(project_slug, env_var_2_name)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_successful_list_env_vars_request(
@@ -206,11 +208,11 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:delete)
               .with(env_var_url(host, project_slug, env_var_1_name),
-                    headers: authenticated_headers(api_token)))
+                    { headers: authenticated_headers(api_token) }))
       expect(Excon)
         .to(have_received(:delete)
               .with(env_var_url(host, project_slug, env_var_2_name),
-                    headers: authenticated_headers(api_token)))
+                    { headers: authenticated_headers(api_token) }))
     end
     # rubocop:enable RSpec/MultipleExpectations
 
@@ -228,9 +230,9 @@ describe RakeCircleCI::Client do
       env_var_2_path = env_var_path(project_slug, env_var_2_name)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_successful_list_env_vars_request(
@@ -263,9 +265,9 @@ describe RakeCircleCI::Client do
       checkout_keys_path = checkout_keys_path(project_slug)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = create_checkout_key_request_body
@@ -278,8 +280,8 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:post)
               .with(checkout_keys_url(host, project_slug),
-                    body: JSON.dump(expected_body),
-                    headers: authenticated_headers(api_token)))
+                    { body: JSON.dump(expected_body),
+                      headers: authenticated_headers(api_token) }))
     end
 
     it 'raises an exception on failure' do
@@ -291,9 +293,9 @@ describe RakeCircleCI::Client do
       checkout_keys_url = checkout_keys_url(host, project_slug)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = create_checkout_key_request_body
@@ -324,9 +326,9 @@ describe RakeCircleCI::Client do
       checkout_key_url = checkout_key_url(host, project_slug, fingerprint)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_successful_delete_checkout_key_request(
@@ -338,7 +340,7 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:delete)
               .with(checkout_key_url,
-                    headers: authenticated_headers(api_token)))
+                    { headers: authenticated_headers(api_token) }))
     end
 
     it 'raises an exception on failure' do
@@ -353,9 +355,9 @@ describe RakeCircleCI::Client do
       checkout_key_url = checkout_key_url(host, project_slug, fingerprint)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_failed_delete_checkout_key_request(
@@ -381,9 +383,9 @@ describe RakeCircleCI::Client do
       checkout_keys_path = checkout_keys_path(project_slug)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       checkout_key1 = {
@@ -420,9 +422,9 @@ describe RakeCircleCI::Client do
       checkout_keys_url = checkout_keys_url(host, project_slug)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_failed_list_checkout_keys_request(
@@ -449,9 +451,9 @@ describe RakeCircleCI::Client do
       checkout_keys_path = checkout_keys_path(project_slug)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       checkout_key1 = ssh_key
@@ -476,11 +478,11 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:delete)
               .with(checkout_key_url(host, project_slug, fingerprint1),
-                    headers: authenticated_headers(api_token)))
+                    { headers: authenticated_headers(api_token) }))
       expect(Excon)
         .to(have_received(:delete)
               .with(checkout_key_url(host, project_slug, fingerprint2),
-                    headers: authenticated_headers(api_token)))
+                    { headers: authenticated_headers(api_token) }))
     end
     # rubocop:enable RSpec/MultipleExpectations
 
@@ -493,9 +495,9 @@ describe RakeCircleCI::Client do
       checkout_keys_path = checkout_keys_path(project_slug)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       checkout_key1 = ssh_key
@@ -538,9 +540,9 @@ describe RakeCircleCI::Client do
       ssh_keys_path = ssh_keys_path(project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = create_ssh_key_request_body(key)
@@ -553,8 +555,8 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:post)
               .with(ssh_keys_url(host, project_slug, api_token),
-                    body: JSON.dump(expected_body),
-                    headers: authenticated_headers(api_token)))
+                    { body: JSON.dump(expected_body),
+                      headers: authenticated_headers(api_token) }))
     end
 
     it 'passes the hostname when supplied' do
@@ -570,9 +572,9 @@ describe RakeCircleCI::Client do
       ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = create_ssh_key_request_body(key, hostname)
@@ -580,13 +582,13 @@ describe RakeCircleCI::Client do
         host, ssh_keys_path, api_token, expected_body
       )
 
-      client.create_ssh_key(key.private_key, hostname: hostname)
+      client.create_ssh_key(key.private_key, hostname:)
 
       expect(Excon)
         .to(have_received(:post)
               .with(ssh_keys_url,
-                    body: JSON.dump(expected_body),
-                    headers: authenticated_headers(api_token)))
+                    { body: JSON.dump(expected_body),
+                      headers: authenticated_headers(api_token) }))
     end
 
     it 'raises an exception on failure' do
@@ -602,9 +604,9 @@ describe RakeCircleCI::Client do
       hostname = 'github.com'
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = create_ssh_key_request_body(key, hostname)
@@ -613,7 +615,7 @@ describe RakeCircleCI::Client do
       )
 
       expect do
-        client.create_ssh_key(key.private_key, hostname: hostname)
+        client.create_ssh_key(key.private_key, hostname:)
       end.to(raise_error(
                RuntimeError,
                "Unsuccessful request: #{ssh_keys_url} 400 Bad Request"
@@ -635,9 +637,9 @@ describe RakeCircleCI::Client do
       ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = delete_ssh_key_request_body(key.fingerprint, hostname)
@@ -645,13 +647,13 @@ describe RakeCircleCI::Client do
         host, ssh_keys_path, api_token, expected_body
       )
 
-      client.delete_ssh_key(key.fingerprint, hostname: hostname)
+      client.delete_ssh_key(key.fingerprint, hostname:)
 
       expect(Excon)
         .to(have_received(:delete)
               .with(ssh_keys_url,
-                    body: JSON.dump(expected_body),
-                    headers: authenticated_headers(api_token)))
+                    { body: JSON.dump(expected_body),
+                      headers: authenticated_headers(api_token) }))
     end
 
     it 'does not pass a hostname when none supplied' do
@@ -666,9 +668,9 @@ describe RakeCircleCI::Client do
       ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = delete_ssh_key_request_body(key.fingerprint)
@@ -681,8 +683,8 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:delete)
               .with(ssh_keys_url,
-                    body: JSON.dump(expected_body),
-                    headers: authenticated_headers(api_token)))
+                    { body: JSON.dump(expected_body),
+                      headers: authenticated_headers(api_token) }))
     end
 
     it 'raises an exception on failure' do
@@ -698,9 +700,9 @@ describe RakeCircleCI::Client do
       ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body = delete_ssh_key_request_body(key.fingerprint, hostname)
@@ -709,7 +711,7 @@ describe RakeCircleCI::Client do
       )
 
       expect do
-        client.delete_ssh_key(key.fingerprint, hostname: hostname)
+        client.delete_ssh_key(key.fingerprint, hostname:)
       end.to(raise_error(
                RuntimeError,
                "Unsuccessful request: #{ssh_keys_url} 400 Bad Request"
@@ -731,9 +733,9 @@ describe RakeCircleCI::Client do
       settings_path = settings_path(project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       ssh_key1_response_body = ssh_key_response_body(key1, hostname1)
@@ -761,9 +763,9 @@ describe RakeCircleCI::Client do
       settings_url = settings_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_failed_list_ssh_keys_request(api_token, host, settings_path)
@@ -793,9 +795,9 @@ describe RakeCircleCI::Client do
       ssh_keys_path = ssh_keys_path(project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body1 = delete_ssh_key_request_body(key1.fingerprint, hostname1)
@@ -818,13 +820,13 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:delete)
               .with(ssh_keys_url(host, project_slug, api_token),
-                    body: JSON.dump(expected_body1),
-                    headers: authenticated_headers(api_token)))
+                    { body: JSON.dump(expected_body1),
+                      headers: authenticated_headers(api_token) }))
       expect(Excon)
         .to(have_received(:delete)
               .with(ssh_keys_url(host, project_slug, api_token),
-                    body: JSON.dump(expected_body2),
-                    headers: authenticated_headers(api_token)))
+                    { body: JSON.dump(expected_body2),
+                      headers: authenticated_headers(api_token) }))
     end
     # rubocop:enable RSpec/MultipleExpectations
 
@@ -844,9 +846,9 @@ describe RakeCircleCI::Client do
       ssh_keys_url = ssh_keys_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_body1 = delete_ssh_key_request_body(key1.fingerprint, hostname1)
@@ -884,9 +886,9 @@ describe RakeCircleCI::Client do
       follow_url = follow_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       expected_headers = authenticated_headers(api_token)
@@ -898,7 +900,7 @@ describe RakeCircleCI::Client do
       expect(Excon)
         .to(have_received(:post)
               .with(follow_url,
-                    headers: expected_headers))
+                    { headers: expected_headers }))
     end
 
     it 'raises an exception on failure' do
@@ -910,9 +912,9 @@ describe RakeCircleCI::Client do
       follow_url = follow_url(host, project_slug, api_token)
 
       client = described_class.new(
-        project_slug: project_slug,
-        api_token: api_token,
-        base_url: base_url
+        project_slug:,
+        api_token:,
+        base_url:
       )
 
       stub_failed_follow_request(api_token, host, project_slug)
@@ -1016,26 +1018,26 @@ describe RakeCircleCI::Client do
       fingerprint: key.fingerprint,
       private_key: key.private_key
     }
-    hostname ? body.merge(hostname: hostname) : body
+    hostname ? body.merge(hostname:) : body
   end
 
   def delete_ssh_key_request_body(fingerprint, hostname = nil)
     body = {
-      fingerprint: fingerprint
+      fingerprint:
     }
-    hostname ? body.merge(hostname: hostname) : body
+    hostname ? body.merge(hostname:) : body
   end
 
   def bad_request_response_body(host, path)
     {
-      host: host,
-      path: path,
+      host:,
+      path:,
       reason_phrase: 'Bad Request'
     }
   end
 
   def env_vars_response_body(env_var_names)
-    { items: env_var_names.map { |name| { name: name } } }
+    { items: env_var_names.map { |name| { name: } } }
   end
 
   def checkout_key_response_body(opts)
@@ -1064,7 +1066,7 @@ describe RakeCircleCI::Client do
       fingerprint: key.fingerprint,
       private_key: key.private_key
     }
-    response.merge(hostname: hostname)
+    response.merge(hostname:)
   end
 
   def ssh_keys_response_body(keys)
@@ -1130,7 +1132,7 @@ describe RakeCircleCI::Client do
     response_double(
       'create checkout key response',
       status: 201,
-      body: JSON.dump(checkout_key_response_body(key: key))
+      body: JSON.dump(checkout_key_response_body(key:))
     )
   end
 
@@ -1241,8 +1243,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with("#{host}#{env_vars_path}",
-                  body: JSON.dump(env_var),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(env_var),
+                    headers: authenticated_headers(api_token) })
             .and_return(successful_create_env_var_response_double))
   end
 
@@ -1252,8 +1254,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with("#{host}#{env_vars_path}",
-                  body: JSON.dump(body),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(body),
+                    headers: authenticated_headers(api_token) })
             .and_return(
               failed_create_env_var_response_double(host, env_vars_path)
             ))
@@ -1265,7 +1267,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:get)
             .with("#{host}#{env_vars_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(
               successful_list_env_vars_response_double(env_var_names)
             ))
@@ -1275,7 +1277,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:get)
             .with("#{host}#{env_vars_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(failed_list_env_vars_response_double(
                           host, env_vars_path
                         )))
@@ -1287,7 +1289,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:delete)
             .with("#{host}#{env_var_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(
               successful_delete_env_var_response_double(identifier)
             ))
@@ -1299,7 +1301,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:delete)
             .with("#{host}#{env_var_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(
               failed_delete_env_var_response_double(
                 host, env_var_path, identifier
@@ -1313,8 +1315,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with("#{host}#{checkout_keys_path}",
-                  body: JSON.dump(expected_body),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token) })
             .and_return(
               successful_create_checkout_key_response_double(ssh_key)
             ))
@@ -1326,8 +1328,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with("#{host}#{checkout_keys_path}",
-                  body: JSON.dump(expected_body),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(expected_body),
+                    headers: authenticated_headers(api_token) })
             .and_return(
               failed_create_checkout_key_response_double(
                 host, checkout_keys_path
@@ -1341,7 +1343,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:delete)
             .with("#{host}#{checkout_key_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(successful_delete_checkout_key_response_double))
   end
 
@@ -1351,7 +1353,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:delete)
             .with("#{host}#{checkout_key_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(
               failed_delete_checkout_key_response_double(
                 host, checkout_key_path
@@ -1365,7 +1367,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:get)
             .with("#{host}#{checkout_keys_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(
               successful_list_checkout_keys_response_double(
                 checkout_keys
@@ -1379,7 +1381,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:get)
             .with("#{host}#{checkout_keys_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(
               failed_list_checkout_keys_response_double(
                 host, checkout_keys_path
@@ -1393,8 +1395,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with("#{host}#{ssh_keys_path}",
-                  body: JSON.dump(body),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(body),
+                    headers: authenticated_headers(api_token) })
             .and_return(successful_create_ssh_key_response_double))
   end
 
@@ -1402,8 +1404,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with("#{host}#{ssh_keys_path}",
-                  body: JSON.dump(body),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(body),
+                    headers: authenticated_headers(api_token) })
             .and_return(failed_create_ssh_key_response_double(
                           host, ssh_keys_path
                         )))
@@ -1415,8 +1417,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:delete)
             .with("#{host}#{ssh_keys_path}",
-                  body: JSON.dump(body),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(body),
+                    headers: authenticated_headers(api_token) })
             .and_return(successful_delete_ssh_key_response_double))
   end
 
@@ -1424,8 +1426,8 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:delete)
             .with("#{host}#{ssh_keys_path}",
-                  body: JSON.dump(body),
-                  headers: authenticated_headers(api_token))
+                  { body: JSON.dump(body),
+                    headers: authenticated_headers(api_token) })
             .and_return(failed_delete_ssh_key_response_double(
                           host, ssh_keys_path
                         )))
@@ -1437,7 +1439,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:get)
             .with("#{host}#{settings_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(successful_list_ssh_keys_response_double(
                           body
                         )))
@@ -1447,7 +1449,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:get)
             .with("#{host}#{ssh_keys_path}",
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(failed_list_ssh_keys_response_double(
                           host, ssh_keys_path
                         )))
@@ -1457,7 +1459,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with(follow_url(host, project_slug, api_token),
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(successful_follow_response_double))
   end
 
@@ -1465,7 +1467,7 @@ describe RakeCircleCI::Client do
     allow(Excon)
       .to(receive(:post)
             .with(follow_url(host, project_slug, api_token),
-                  headers: authenticated_headers(api_token))
+                  { headers: authenticated_headers(api_token) })
             .and_return(failed_follow_response_double(
                           host, project_slug, api_token
                         )))

@@ -52,7 +52,7 @@ describe RakeCircleCI::Tasks::SSHKeys::Ensure do
     project_slug = 'github/org/repo'
 
     define_task(
-      project_slug: project_slug,
+      project_slug:,
       argument_names: %i[thing1 thing2]
     )
 

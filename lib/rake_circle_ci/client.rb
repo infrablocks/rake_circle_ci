@@ -79,22 +79,22 @@ module RakeCircleCI
     end
 
     def follow_project
-      @http.post(@urls.follow_url, headers: headers)
+      @http.post(@urls.follow_url, { headers: })
     end
 
     def find_env_vars
-      response = @http.get(@urls.env_vars_url, headers: headers)
+      response = @http.get(@urls.env_vars_url, { headers: })
       body = JSON.parse(response.body)
       body['items'].map { |item| item['name'] }
     end
 
     def create_env_var(name, value)
-      body = JSON.dump(name: name, value: value)
-      @http.post(@urls.env_vars_url, body: body, headers: headers)
+      body = JSON.dump(name:, value:)
+      @http.post(@urls.env_vars_url, { body:, headers: })
     end
 
     def delete_env_var(name)
-      @http.delete(@urls.env_var_url(name), headers: headers)
+      @http.delete(@urls.env_var_url(name), { headers: })
     end
 
     def delete_env_vars
@@ -105,7 +105,7 @@ module RakeCircleCI
     end
 
     def find_ssh_keys
-      response = @http.get(@urls.settings_url, headers: headers)
+      response = @http.get(@urls.settings_url, { headers: })
       body = JSON.parse(response.body, symbolize_names: true)
       body[:ssh_keys]
     end
@@ -113,20 +113,20 @@ module RakeCircleCI
     def create_ssh_key(private_key, opts = {})
       body = {
         fingerprint: SSHKey.new(private_key).sha1_fingerprint,
-        private_key: private_key
+        private_key:
       }
       body = body.merge(hostname: opts[:hostname]) if opts[:hostname]
       body = JSON.dump(body)
-      @http.post(@urls.ssh_keys_url, body: body, headers: headers)
+      @http.post(@urls.ssh_keys_url, { body:, headers: })
     end
 
     def delete_ssh_key(fingerprint, opts = {})
       body = {
-        fingerprint: fingerprint
+        fingerprint:
       }
       body = body.merge(hostname: opts[:hostname]) if opts[:hostname]
       body = JSON.dump(body)
-      @http.delete(@urls.ssh_keys_url, body: body, headers: headers)
+      @http.delete(@urls.ssh_keys_url, { body:, headers: })
     end
 
     def delete_ssh_keys
@@ -134,14 +134,14 @@ module RakeCircleCI
       ssh_keys.each do |ssh_key|
         fingerprint = ssh_key[:fingerprint]
         hostname = ssh_key[:hostname]
-        options = hostname && { hostname: hostname }
+        options = hostname && { hostname: }
         args = [fingerprint, options].compact
         delete_ssh_key(*args)
       end
     end
 
     def find_checkout_keys
-      response = @http.get(@urls.checkout_keys_url, headers: headers)
+      response = @http.get(@urls.checkout_keys_url, { headers: })
       JSON.parse(response.body, symbolize_names: true)
     end
 
@@ -151,11 +151,11 @@ module RakeCircleCI
         github_user_key: 'github-user-key'
       }
       body = JSON.dump(type: type_strings[type.to_sym] || type.to_s)
-      @http.post(@urls.checkout_keys_url, body: body, headers: headers)
+      @http.post(@urls.checkout_keys_url, { body:, headers: })
     end
 
     def delete_checkout_key(fingerprint)
-      @http.delete(@urls.checkout_key_url(fingerprint), headers: headers)
+      @http.delete(@urls.checkout_key_url(fingerprint), { headers: })
     end
 
     def delete_checkout_keys

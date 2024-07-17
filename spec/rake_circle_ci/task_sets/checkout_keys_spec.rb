@@ -44,8 +44,8 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       api_token = 'some-api-token'
 
       define_tasks(
-        project_slug: project_slug,
-        api_token: api_token
+        project_slug:,
+        api_token:
       )
 
       rake_task = Rake::Task['destroy']
@@ -59,8 +59,8 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       api_token = 'some-api-token'
 
       define_tasks(
-        project_slug: project_slug,
-        api_token: api_token
+        project_slug:,
+        api_token:
       )
 
       rake_task = Rake::Task['destroy']
@@ -82,7 +82,7 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       base_url = 'https://private.circleci.net/api'
 
       define_tasks(
-        base_url: base_url
+        base_url:
       )
 
       rake_task = Rake::Task['destroy']
@@ -111,8 +111,8 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       api_token = 'some-api-token'
 
       define_tasks(
-        project_slug: project_slug,
-        api_token: api_token
+        project_slug:,
+        api_token:
       )
 
       rake_task = Rake::Task['provision']
@@ -126,8 +126,8 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       api_token = 'some-api-token'
 
       define_tasks(
-        project_slug: project_slug,
-        api_token: api_token
+        project_slug:,
+        api_token:
       )
 
       rake_task = Rake::Task['provision']
@@ -149,7 +149,7 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       base_url = 'https://private.circleci.net/api'
 
       define_tasks(
-        base_url: base_url
+        base_url:
       )
 
       rake_task = Rake::Task['provision']
@@ -178,7 +178,7 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       ]
 
       define_tasks(
-        checkout_keys: checkout_keys
+        checkout_keys:
       )
 
       rake_task = Rake::Task['provision']
@@ -207,7 +207,7 @@ describe RakeCircleCI::TaskSets::CheckoutKeys do
       project_slug = 'gitlab/my-org/my-repo'
 
       define_tasks(
-        project_slug: project_slug
+        project_slug:
       )
 
       rake_task = Rake::Task['ensure']

@@ -36,7 +36,7 @@ module RakeCircleCI
             print "Adding SSH key with fingerprint: '#{fingerprint}'"
             print " for hostname: '#{hostname}'" if hostname
             print '...'
-            options = hostname && { hostname: hostname }
+            options = hostname && { hostname: }
             args = [private_key, options].compact
             client.create_ssh_key(*args)
             puts 'Done.'

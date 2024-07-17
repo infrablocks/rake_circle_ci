@@ -99,8 +99,8 @@ describe RakeCircleCI::Tasks::EnvironmentVariables::Provision do
     allow(RakeCircleCI::Client)
       .to(receive(:new)
             .with(hash_including(
-                    project_slug: project_slug,
-                    api_token: api_token,
+                    project_slug:,
+                    api_token:,
                     base_url: 'https://circleci.com/api'
                   ))
             .and_return(client))
@@ -108,9 +108,9 @@ describe RakeCircleCI::Tasks::EnvironmentVariables::Provision do
     allow(client).to(receive(:create_env_var))
 
     define_task(
-      project_slug: project_slug,
-      api_token: api_token,
-      environment_variables: environment_variables
+      project_slug:,
+      api_token:,
+      environment_variables:
     )
 
     Rake::Task['env_vars:provision'].invoke

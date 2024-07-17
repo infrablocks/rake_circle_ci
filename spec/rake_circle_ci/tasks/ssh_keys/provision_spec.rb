@@ -121,8 +121,8 @@ describe RakeCircleCI::Tasks::SSHKeys::Provision do
     allow(RakeCircleCI::Client)
       .to(receive(:new)
             .with(hash_including(
-                    project_slug: project_slug,
-                    api_token: api_token,
+                    project_slug:,
+                    api_token:,
                     base_url: 'https://circleci.com/api'
                   ))
             .and_return(client))
@@ -130,11 +130,11 @@ describe RakeCircleCI::Tasks::SSHKeys::Provision do
     allow(client).to(receive(:create_ssh_key))
 
     define_task(
-      project_slug: project_slug,
-      api_token: api_token,
+      project_slug:,
+      api_token:,
       ssh_keys: [
-        { private_key: private_key, hostname: hostname1 },
-        { private_key: private_key, hostname: hostname2 }
+        { private_key:, hostname: hostname1 },
+        { private_key:, hostname: hostname2 }
       ]
     )
 
@@ -162,8 +162,8 @@ describe RakeCircleCI::Tasks::SSHKeys::Provision do
     allow(RakeCircleCI::Client)
       .to(receive(:new)
             .with(hash_including(
-                    project_slug: project_slug,
-                    api_token: api_token,
+                    project_slug:,
+                    api_token:,
                     base_url: 'https://circleci.com/api'
                   ))
             .and_return(client))
@@ -171,8 +171,8 @@ describe RakeCircleCI::Tasks::SSHKeys::Provision do
     allow(client).to(receive(:create_ssh_key))
 
     define_task(
-      project_slug: project_slug,
-      api_token: api_token,
+      project_slug:,
+      api_token:,
       ssh_keys: [
         { private_key: private_key1, hostname: hostname1 },
         { private_key: private_key2 }

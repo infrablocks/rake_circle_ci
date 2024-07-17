@@ -118,8 +118,8 @@ describe RakeCircleCI::Tasks::CheckoutKeys::Provision do
     allow(RakeCircleCI::Client)
       .to(receive(:new)
             .with(hash_including(
-                    project_slug: project_slug,
-                    api_token: api_token,
+                    project_slug:,
+                    api_token:,
                     base_url: 'https://circleci.com/api'
                   ))
             .and_return(client))
@@ -127,8 +127,8 @@ describe RakeCircleCI::Tasks::CheckoutKeys::Provision do
     allow(client).to(receive(:create_checkout_key))
 
     define_task(
-      project_slug: project_slug,
-      api_token: api_token,
+      project_slug:,
+      api_token:,
       checkout_keys: [
         { type: :deploy_key },
         { type: :github_user_key }

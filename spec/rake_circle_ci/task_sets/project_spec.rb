@@ -74,8 +74,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['project:follow']
@@ -88,8 +88,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['project:follow']
@@ -110,7 +110,7 @@ describe RakeCircleCI::TaskSets::Project do
         base_url = 'https://private.circleci.net/api'
 
         define_tasks(
-          base_url: base_url
+          base_url:
         )
 
         rake_task = Rake::Task['project:follow']
@@ -165,8 +165,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['env_vars:destroy']
@@ -179,8 +179,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['env_vars:destroy']
@@ -201,7 +201,7 @@ describe RakeCircleCI::TaskSets::Project do
         base_url = 'https://private.circleci.net/api'
 
         define_tasks(
-          base_url: base_url
+          base_url:
         )
 
         rake_task = Rake::Task['env_vars:destroy']
@@ -230,8 +230,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['env_vars:provision']
@@ -244,8 +244,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['env_vars:provision']
@@ -265,7 +265,7 @@ describe RakeCircleCI::TaskSets::Project do
         base_url = 'https://private.circleci.net/api'
 
         define_tasks(
-          base_url: base_url
+          base_url:
         )
 
         rake_task = Rake::Task['env_vars:provision']
@@ -288,7 +288,7 @@ describe RakeCircleCI::TaskSets::Project do
         }
 
         define_tasks(
-          environment_variables: environment_variables
+          environment_variables:
         )
 
         rake_task = Rake::Task['env_vars:provision']
@@ -317,7 +317,7 @@ describe RakeCircleCI::TaskSets::Project do
         project_slug = 'gitlab/my-org/my-repo'
 
         define_tasks(
-          project_slug: project_slug
+          project_slug:
         )
 
         rake_task = Rake::Task['env_vars:ensure']
@@ -407,8 +407,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['ssh_keys:destroy']
@@ -421,8 +421,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['ssh_keys:destroy']
@@ -442,7 +442,7 @@ describe RakeCircleCI::TaskSets::Project do
         base_url = 'https://private.circleci.net/api'
 
         define_tasks(
-          base_url: base_url
+          base_url:
         )
 
         rake_task = Rake::Task['ssh_keys:destroy']
@@ -471,8 +471,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['ssh_keys:provision']
@@ -485,8 +485,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['ssh_keys:provision']
@@ -506,7 +506,7 @@ describe RakeCircleCI::TaskSets::Project do
         base_url = 'https://private.circleci.net/api'
 
         define_tasks(
-          base_url: base_url
+          base_url:
         )
 
         rake_task = Rake::Task['ssh_keys:provision']
@@ -535,7 +535,7 @@ describe RakeCircleCI::TaskSets::Project do
         ]
 
         define_tasks(
-          ssh_keys: ssh_keys
+          ssh_keys:
         )
 
         rake_task = Rake::Task['ssh_keys:provision']
@@ -564,7 +564,7 @@ describe RakeCircleCI::TaskSets::Project do
         project_slug = 'gitlab/my-org/my-repo'
 
         define_tasks(
-          project_slug: project_slug
+          project_slug:
         )
 
         rake_task = Rake::Task['ssh_keys:ensure']
@@ -655,8 +655,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['checkout_keys:destroy']
@@ -669,8 +669,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['checkout_keys:destroy']
@@ -690,7 +690,7 @@ describe RakeCircleCI::TaskSets::Project do
         base_url = 'https://private.circleci.net/api'
 
         define_tasks(
-          base_url: base_url
+          base_url:
         )
 
         rake_task = Rake::Task['checkout_keys:destroy']
@@ -719,8 +719,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['checkout_keys:provision']
@@ -733,8 +733,8 @@ describe RakeCircleCI::TaskSets::Project do
         api_token = 'some-api-token'
 
         define_tasks(
-          project_slug: project_slug,
-          api_token: api_token
+          project_slug:,
+          api_token:
         )
 
         rake_task = Rake::Task['checkout_keys:provision']
@@ -754,7 +754,7 @@ describe RakeCircleCI::TaskSets::Project do
         base_url = 'https://private.circleci.net/api'
 
         define_tasks(
-          base_url: base_url
+          base_url:
         )
 
         rake_task = Rake::Task['checkout_keys:provision']
@@ -782,7 +782,7 @@ describe RakeCircleCI::TaskSets::Project do
         ]
 
         define_tasks(
-          checkout_keys: checkout_keys
+          checkout_keys:
         )
 
         rake_task = Rake::Task['checkout_keys:provision']
@@ -811,7 +811,7 @@ describe RakeCircleCI::TaskSets::Project do
         project_slug = 'gitlab/my-org/my-repo'
 
         define_tasks(
-          project_slug: project_slug
+          project_slug:
         )
 
         rake_task = Rake::Task['checkout_keys:ensure']
