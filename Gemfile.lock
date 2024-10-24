@@ -3,7 +3,7 @@ PATH
   specs:
     rake_circle_ci (0.14.0.pre.2)
       colored2 (~> 3.1)
-      excon (~> 0.72)
+      excon (>= 0.72, < 2.0)
       rake_factory (~> 0.33)
       sshkey (~> 2.0)
 
@@ -33,7 +33,7 @@ GEM
     diff-lcs (1.5.1)
     docile (1.4.0)
     drb (2.2.1)
-    excon (0.112.0)
+    excon (1.0.0)
     faraday (2.10.0)
       faraday-net_http (>= 2.0, < 3.2)
       logger
