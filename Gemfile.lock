@@ -35,7 +35,7 @@ GEM
     diff-lcs (1.5.1)
     docile (1.4.0)
     drb (2.2.1)
-    excon (1.2.3)
+    excon (1.2.4)
     faraday (2.10.0)
       faraday-net_http (>= 2.0, < 3.2)
       logger
